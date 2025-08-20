@@ -1,0 +1,93 @@
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env
+
+  # Redis как брокер для Celery
+  redis:
+    image: redis:7-alpine
+    container_name: celery_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+    restart: unless-stopped
+
+  # Django Backend (только клиент Celery)
+  backend:
+    build: ./backend
+    container_name: django_backend
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
+      SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DEBUG: ${DEBUG}
+      LOGLEVEL: ${DJANGO_LOGLEVEL}
+      ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+      DATABASE_ENGINE: ${DATABASE_ENGINE}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USERNAME: ${DATABASE_USERNAME}
+
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    networks:
+      - app_network
+    restart: unless-stopped
+
+  # Telegram Bot (сервер Celery)
+#  tg_bot:
+#    build: ./tg_bot
+#    container_name: telegram_bot
+#    volumes:
+#      - ./tg_bot:/app
+#    environment:
+#      - REDIS_URL=redis://redis:6379/0
+#      - TELEGRAM_BOT_TOKEN=your_bot_token_here
+#    depends_on:
+#      - redis
+#    networks:
+#      - app_network
+#    restart: unless-stopped
+#
+#  # Celery Worker для Telegram Bot
+#  tg_celery_worker:
+#    build: ./tg_bot
+#    container_name: tg_bot_celery_worker
+#    command: celery -A tg_bot.celery_app worker --loglevel=info --concurrency=4
+#    volumes:
+#      - ./tg_bot:/app
+#    environment:
+#      - REDIS_URL=redis://redis:6379/0
+#      - TELEGRAM_BOT_TOKEN=your_bot_token_here
+#    depends_on:
+#      - redis
+#      - tg_bot
+#    networks:
+#      - app_network
+#    restart: unless-stopped
+
+volumes:
+  redis_data:
+  postgres_data:
+
+networks:
+  app_network:
+    driver: bridge
