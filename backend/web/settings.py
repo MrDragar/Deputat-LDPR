@@ -34,6 +34,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'ldpr_form'
 ]
 
 MIDDLEWARE = [
@@ -72,7 +74,7 @@ WSGI_APPLICATION = 'web.wsgi.application'
 DATABASES = {
      'default': {
          'ENGINE': 'django.db.backends.{}'.format(
-             os.getenv('DATABASE_ENGINE', 'sqlite3')
+             os.getenv('DATABASE_ENGINE', 'postgresql')
          ),
          'NAME': os.getenv('DATABASE_NAME', 'polls'),
          'USER': os.getenv('DATABASE_USERNAME', 'myprojectuser'),
@@ -101,6 +103,22 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+REST_FRAMEWORK = {
+
+    'DEFAULT_RENDERER_CLASSES': (
+        'drf_camel_case.render.CamelCaseJSONRenderer',
+        'drf_camel_case.render.CamelCaseBrowsableAPIRenderer',
+        # Any other renders
+    ),
+
+    'DEFAULT_PARSER_CLASSES': (
+        # If you use MultiPartFormParser or FormParser, we also have a camel case version
+        'drf_camel_case.parser.CamelCaseFormParser',
+        'drf_camel_case.parser.CamelCaseMultiPartParser',
+        'drf_camel_case.parser.CamelCaseJSONParser',
+        # Any other parsers
+    ),
+}
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
