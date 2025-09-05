@@ -11,6 +11,8 @@ services:
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - .env
+    networks:
+      - app_network
 
   # Redis как брокер для Celery
   redis:

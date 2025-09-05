@@ -1,0 +1,5 @@
+{
+  "name": "Анкета депутата ЛДПР (добавление страницы после отправки анкеты)",
+  "description": "A comprehensive registration form for LDPR members, featuring dynamic fields, custom inputs, and data validation. The form allows users to input personal, professional, and political information, which can then be downloaded as a JSON file.",
+  "requestFramePermissions": []
+}

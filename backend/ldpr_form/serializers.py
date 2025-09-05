@@ -8,7 +8,6 @@ import re
 import datetime
 
 
-# Helper function to convert empty string to None for optional integer fields
 def empty_string_to_none(value):
     return None if value == '' else value
 
@@ -35,29 +34,25 @@ class EducationSerializer(serializers.ModelSerializer):
                                              'required': 'Это поле обязательно для заполнения'})
 
     has_postgraduate = serializers.ChoiceField(choices=constants.HAS_CHOICES,
-                                               default='Нет',
-                                               required=False)  # Frontend sends 'Да'/'Нет'
+                                               default='Нет', required=False)
     postgraduate_type = serializers.ChoiceField(
         choices=constants.make_choices_from_list(constants.POSTGRADUATE_TYPES),
-        required=False, allow_blank=True,
-        allow_null=True)  # <-- allow_blank/null
+        required=False, allow_blank=True, allow_null=True)
     postgraduate_organization = serializers.CharField(max_length=255,
                                                       required=False,
-                                                      allow_blank=True)  # <-- allow_blank
+                                                      allow_blank=True)
 
     has_degree = serializers.ChoiceField(choices=constants.HAS_CHOICES,
                                          default='Нет', required=False)
     degree_type = serializers.ChoiceField(
         choices=constants.make_choices_from_list(constants.DEGREE_TYPES),
-        required=False, allow_blank=True,
-        allow_null=True)  # <-- allow_blank/null
+        required=False, allow_blank=True, allow_null=True)
 
     has_title = serializers.ChoiceField(choices=constants.HAS_CHOICES,
                                         default='Нет', required=False)
     title_type = serializers.ChoiceField(
         choices=constants.make_choices_from_list(constants.TITLE_TYPES),
-        required=False, allow_blank=True,
-        allow_null=True)  # <-- allow_blank/null
+        required=False, allow_blank=True, allow_null=True)
 
     class Meta:
         model = Education
@@ -72,7 +67,6 @@ class EducationSerializer(serializers.ModelSerializer):
         """
         Дополнительная валидация для полей образования на основе выбора 'Да'/'Нет'.
         """
-        # Frontend ensures 'Нет' clears dependent fields. Backend should validate 'Да'.
         if data.get('has_postgraduate') == 'Да':
             if not data.get('postgraduate_type'):
                 raise serializers.ValidationError(
@@ -103,7 +97,7 @@ class WorkExperienceSerializer(serializers.ModelSerializer):
     start_date = serializers.CharField(max_length=50, required=True,
                                        error_messages={
                                            'required': 'Это поле обязательно для заполнения',
-                                           'invalid': 'Неверный формат даты. Ожидается ММ.ГГГГ'})  # Frontend uses string "01.2020"
+                                           'invalid': 'Неверный формат даты. Ожидается ММ.ГГГГ'})
 
     class Meta:
         model = WorkExperience
@@ -118,8 +112,7 @@ class ForeignLanguageSerializer(serializers.ModelSerializer):
         error_messages={'required': 'Это поле обязательно для заполнения'})
     level = serializers.ChoiceField(
         choices=constants.make_choices_from_list(constants.LANGUAGE_LEVELS),
-        required=False,
-        default='Читаю и перевожу со словарем')  # Default value on frontend
+        required=False, default='Читаю и перевожу со словарем')
 
     class Meta:
         model = ForeignLanguage
@@ -149,7 +142,7 @@ class SocialOrganizationSerializer(serializers.ModelSerializer):
                                          'required': 'Это поле обязательно для заполнения'})
     years = serializers.CharField(max_length=50, required=True, error_messages={
         'required': 'Это поле обязательно для заполнения',
-        'invalid': 'Неверный формат годов. Ожидается ГГГГ-ГГГГ'})  # Frontend uses string "2018-2022"
+        'invalid': 'Неверный формат годов. Ожидается ГГГГ-ГГГГ'})
 
     class Meta:
         model = SocialOrganization
@@ -161,21 +154,15 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
     Основной сериализатор для модели RegistrationForm, включающий вложенные сериализаторы
     для связанных данных.
     """
-    # Nested serializers for related objects
-    other_links = OtherLinkSerializer(many=True,
-                                      required=False)  # Frontend allows 0 links
-    education = EducationSerializer(many=True,
-                                    required=True)  # Frontend requires at least one
-    work_experience = WorkExperienceSerializer(many=True,
-                                               required=True)  # Frontend requires at least one
+    other_links = OtherLinkSerializer(many=True, required=False)
+    education = EducationSerializer(many=True, required=True)
+    work_experience = WorkExperienceSerializer(many=True, required=True)
     foreign_languages = ForeignLanguageSerializer(many=True, required=False)
     russian_federation_languages = RussianFederationLanguageSerializer(
         many=True, required=False)
     social_organizations = SocialOrganizationSerializer(many=True,
                                                         required=False)
 
-    # Main fields (camelCase from frontend will be converted to snake_case by drf_camel_case)
-    # Explicitly define fields with custom requirements/validation
     telegram_id = serializers.CharField(max_length=255, required=False,
                                         allow_blank=True, allow_null=True)
     middle_name = serializers.CharField(max_length=255, required=False,
@@ -193,10 +180,21 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
     telegram_channel = serializers.URLField(required=False, allow_blank=True)
     personal_site = serializers.URLField(required=False, allow_blank=True)
 
-    # Family fields - handle empty strings from frontend becoming None for OptionalIntegerField
-    children_count = serializers.IntegerField(allow_null=True,
-                                              min_value=0, default=0,
-                                              help_text="Количество детей")  # Default 0 from frontend
+    # === ИСПРАВЛЕНИЕ ДАТЫ: Указываем формат входящих данных ===
+    birth_date = serializers.DateField(
+        input_formats=['%d.%m.%Y', '%Y-%m-%d'],
+        # Позволяем DD.MM.YYYY и YYYY-MM-DD
+        required=True,
+        error_messages={
+            'required': 'Дата рождения обязательна для заполнения.',
+            'invalid': 'Неверный формат даты. Используйте ДД.ММ.ГГГГ.'
+        }
+    )
+    # ==========================================================
+
+    children_count = serializers.IntegerField(required=True,
+                                              min_value=0,
+                                              help_text="Количество детей")
     children_male_count = serializers.IntegerField(required=False,
                                                    allow_null=True, min_value=0)
     children_female_count = serializers.IntegerField(required=False,
@@ -212,19 +210,15 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
                                                               allow_null=True,
                                                               min_value=0)
 
-    # Professional sphere (from JSONField in model)
     professional_sphere = serializers.JSONField(required=True, error_messages={
         'required': 'Это поле обязательно для заполнения'})
     awards = serializers.CharField(required=False, allow_blank=True)
 
-    # Feedback fields
-    ldpr_resources = serializers.JSONField(required=False,
-                                           default=list)  # Frontend sends list, can be empty
+    ldpr_resources = serializers.JSONField(required=False, default=list)
     central_office_assistant = serializers.CharField(required=False,
                                                      allow_blank=True)
     knowledge_gaps = serializers.JSONField(required=False, default=list)
 
-    # Additional info fields (required by frontend)
     additional_info = serializers.CharField(required=True, allow_blank=False,
                                             error_messages={
                                                 'required': 'Это поле обязательно для заполнения',
@@ -253,19 +247,14 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
 
     # --- Field-level validators ---
     def validate_phone(self, value):
-        """
-        Валидация номера телефона (пример: формат +7XXXXXXXXXX).
-        """
         if not re.match(r'^\+7\d{10}$', value):
             raise serializers.ValidationError(
                 "Неверный формат телефона. Ожидается +7XXXXXXXXXX.")
         return value
 
-    def validate_birth_date(self, value):
-        """
-        Валидация даты рождения: возраст должен быть не менее 18 лет.
-        """
-        if not value:
+    def validate_birth_date(self,
+                            value):  # Это останется для валидации возраста
+        if not value:  # Если поле required=True, это уже будет проверено, но для надежности
             raise serializers.ValidationError("Дата рождения обязательна.")
         today = datetime.date.today()
         age = today.year - value.year - (
@@ -276,7 +265,7 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
         return value
 
     def validate_party_experience(self, value):
-        if value is None:  # Can be None if frontend sends empty string and serializer converts
+        if value is None:
             raise serializers.ValidationError("Стаж в партии обязателен.")
         if value < 0:
             raise serializers.ValidationError(
@@ -284,9 +273,6 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
         return value
 
     def validate_professional_sphere(self, value):
-        """
-        Валидация профессиональной сферы: должно быть выбрано ровно 4 варианта.
-        """
         if not isinstance(value, list):
             raise serializers.ValidationError("Это поле должно быть списком.")
         if len(value) != 4:
@@ -300,10 +286,6 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
 
     # --- Object-level validator ---
     def validate(self, data):
-        """
-        Общая валидация данных формы.
-        """
-        # Валидация семейного положения в зависимости от пола (соответствует логике React)
         gender = data.get('gender')
         marital_status = data.get('marital_status')
         if gender == 'Мужчина' and marital_status not in [choice[0] for choice
@@ -317,7 +299,6 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"maritalStatus": "Неверное семейное положение для женщины."})
 
-        # Валидация количества детей (соответствует логике React)
         children_count = data.get('children_count')
         children_male_count = data.get('children_male_count')
         children_female_count = data.get('children_female_count')
@@ -334,7 +315,7 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
                     "childrenMaleCount": "Сумма мальчиков и девочек не соответствует общему количеству детей.",
                     "childrenFemaleCount": "Сумма мальчиков и девочек не соответствует общему количеству детей."
                 })
-        elif children_count == 0:  # If children_count is explicitly 0, ensure male/female counts are 0 or None
+        elif children_count == 0:
             if children_male_count is not None and children_male_count > 0:
                 raise serializers.ValidationError({
                                                       "childrenMaleCount": "Не может быть мальчиков, если нет детей."})
@@ -342,7 +323,6 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({
                                                       "childrenFemaleCount": "Не может быть девочек, если нет детей."})
 
-        # Валидация количества несовершеннолетних детей (соответствует логике React)
         underage_children_count = data.get('underage_children_count')
         underage_children_male_count = data.get('underage_children_male_count')
         underage_children_female_count = data.get(
@@ -360,7 +340,7 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
                     "underageChildrenMaleCount": "Сумма несовершеннолетних мальчиков и девочек не соответствует общему количеству несовершеннолетних детей.",
                     "underageChildrenFemaleCount": "Сумма несовершеннолетних мальчиков и девочек не соответствует общему количеству несовершеннолетних детей."
                 })
-        elif underage_children_count == 0:  # If underage_children_count is explicitly 0
+        elif underage_children_count == 0:
             if underage_children_male_count is not None and underage_children_male_count > 0:
                 raise serializers.ValidationError({
                                                       "underageChildrenMaleCount": "Не может быть несовершеннолетних мальчиков, если нет несовершеннолетних детей."})
@@ -372,13 +352,10 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                                                   "underageChildrenCount": "Количество несовершеннолетних детей не может превышать общее количество детей."})
 
-        # Валидация, если разделы "Образование", "Языки" или "Работа" пусты
-        # React's `isStepComplete` checks for `length === 0`
         if not data.get('education') or len(data['education']) == 0:
             raise serializers.ValidationError({
                                                   "education": "Пожалуйста, добавьте информацию о вашем образовании."})
 
-        # Combined language validation
         foreign_langs = data.get('foreign_languages')
         rf_langs = data.get('russian_federation_languages')
         if (not foreign_langs or len(foreign_langs) == 0) and \
@@ -393,10 +370,6 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        """
-        Создание RegistrationForm и связанных объектов.
-        """
-        # Извлекаем вложенные данные
         other_links_data = validated_data.pop('other_links', [])
         education_data = validated_data.pop('education', [])
         work_experience_data = validated_data.pop('work_experience', [])
@@ -406,10 +379,8 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
         social_organizations_data = validated_data.pop('social_organizations',
                                                        [])
 
-        # Создаем основную форму
         registration_form = RegistrationForm.objects.create(**validated_data)
 
-        # Создаем связанные объекты
         for link_data in other_links_data:
             OtherLink.objects.create(form=registration_form, **link_data)
         for edu_data in education_data:
@@ -428,10 +399,6 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
         return registration_form
 
     def update(self, instance, validated_data):
-        """
-        Обновление RegistrationForm и связанных объектов.
-        """
-        # Обновляем вложенные данные (удаляем старые, создаем новые)
         self._update_related_objects(instance, validated_data, 'other_links',
                                      OtherLinkSerializer, 'other_links')
         self._update_related_objects(instance, validated_data, 'education',
@@ -453,7 +420,6 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
                                      SocialOrganizationSerializer,
                                      'social_organizations')
 
-        # Обновляем поля основной RegistrationForm
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
@@ -461,13 +427,8 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
 
     def _update_related_objects(self, instance, validated_data, field_name,
                                 serializer_class, related_name):
-        """
-        Вспомогательный метод для обновления связанных объектов.
-        """
         data = validated_data.pop(field_name, None)
         if data is not None:
-            # Delete only if data is actually provided. If data is an empty list, it means clear them.
-            # If data is None, it means the field was not sent, so don't touch existing.
             getattr(instance, related_name).all().delete()
             for item_data in data:
                 serializer_class.Meta.model.objects.create(form=instance,

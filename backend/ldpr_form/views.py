@@ -1,4 +1,6 @@
 # ldpr_form/views.py
+import logging
+
 from rest_framework import generics # Import generics
 # from rest_framework import viewsets # ModelViewSet больше не нужен
 from rest_framework.response import Response
@@ -23,11 +25,15 @@ class RegistrationFormCreateView(generics.CreateAPIView): # Изменено н�
     #     # print(f"Новая анкета создана: {instance.first_name} {instance.last_name}")
 
     # Если вы хотите изменить ответ после успешного создания:
-    # def create(self, request, *args, **kwargs):
-    #     serializer = self.get_serializer(data=request.data)
-    #     serializer.is_valid(raise_exception=True)
-    #     self.perform_create(serializer)
-    #     # custom_response_data = {"message": "Анкета успешно создана!", "id": serializer.data['id']}
-    #     # return Response(custom_response_data, status=status.HTTP_201_CREATED)
-    #     headers = self.get_success_headers(serializer.data)
-    #     return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            # if not serializer.is_valid():
+            logging.error(f"Validation errors: {serializer.errors}")
+            raise Exception()
+        self.perform_create(serializer)
+        # custom_response_data = {"message": "Анкета успешно создана!", "id": serializer.data['id']}
+        # return Response(custom_response_data, status=status.HTTP_201_CREATED)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+#

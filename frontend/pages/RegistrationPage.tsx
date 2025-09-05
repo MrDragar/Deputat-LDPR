@@ -43,6 +43,9 @@ const FORM_STEP_KEY = 'ldpr_form_step';
 const FORM_COMPLETED_KEY = 'ldpr_form_completed';
 const FORM_SUBMITTED_KEY = 'ldpr_form_submitted';
 
+// === UPDATED: Base URL from environment variable now points directly to the API endpoint ===
+// For example: REACT_APP_BASE_URL=http://localhost:8000/api/registration-forms/
+const BASE_API_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:8000/api/registration-forms/'; 
 
 // Helper validation functions for dynamic list items
 const validateEducationItemField = (field: keyof Education, item: Education): string | undefined => {
@@ -333,7 +336,16 @@ const RegistrationPage: React.FC = () => {
     const isStepComplete = useCallback((index: number, data: FormData): boolean => {
         const section = SECTIONS[index];
         for (const field of section.fields) {
-            if (validateField(field as keyof FormData, data)) return false;
+            // Special handling for conditional required fields, e.g., partyRoleOther
+            if (field === 'partyRoleOther' && data.partyRole !== 'Другая') {
+                continue; // Skip validation if not 'Другая'
+            }
+            if (field === 'centralOfficeAssistant' && !data.ldprResources.includes("Помощь сотрудников Центрального аппарата")) {
+                continue; // Skip validation if the trigger option is not selected
+            }
+
+            const error = validateField(field as keyof FormData, data);
+            if (error) return false;
         }
 
         if (index === 1) { // Contact Info
@@ -373,6 +385,11 @@ const RegistrationPage: React.FC = () => {
             for(const org of data.socialOrganizations) {
                 if(validateSocialOrgItemField('name', org) || validateSocialOrgItemField('position', org) || validateSocialOrgItemField('years', org)) return false;
             }
+        }
+        
+        // Professional sphere validation (exact 4 selections)
+        if (index === 8) {
+            if (data.professionalSphere.length !== 4) return false;
         }
 
         return true;
@@ -427,8 +444,8 @@ const RegistrationPage: React.FC = () => {
             newFormData.childrenMaleCount = '';
             newFormData.childrenFemaleCount = '';
             newFormData.underageChildrenCount = '';
-            newFormData.underageChildrenMaleCount = '';
-            newFormData.underageChildrenFemaleCount = '';
+            newFormData.childrenMaleCount = ''; // Ensure these are cleared
+            newFormData.childrenFemaleCount = ''; // Ensure these are cleared
         }
         if (field === 'underageChildrenCount' && (!value || parseInt(value, 10) === 0)) {
             newFormData.underageChildrenMaleCount = '';
@@ -443,13 +460,20 @@ const RegistrationPage: React.FC = () => {
                     const male = parseInt(value, 10);
                     if (!isNaN(male) && male >= 0 && male <= total) {
                         newFormData.childrenFemaleCount = (total - male).toString();
+                    } else if (isNaN(male) || male < 0) { // If male count is invalid, clear female count
+                        newFormData.childrenFemaleCount = '';
                     }
                 } else { // childrenFemaleCount
                     const female = parseInt(value, 10);
                     if (!isNaN(female) && female >= 0 && female <= total) {
                         newFormData.childrenMaleCount = (total - female).toString();
+                    } else if (isNaN(female) || female < 0) { // If female count is invalid, clear male count
+                        newFormData.childrenMaleCount = '';
                     }
                 }
+            } else { // If total children count is 0 or invalid, clear male/female counts
+                 newFormData.childrenMaleCount = '';
+                 newFormData.childrenFemaleCount = '';
             }
         }
         
@@ -460,16 +484,23 @@ const RegistrationPage: React.FC = () => {
                     const male = parseInt(value, 10);
                     if (!isNaN(male) && male >= 0 && male <= total) {
                         newFormData.underageChildrenFemaleCount = (total - male).toString();
+                    } else if (isNaN(male) || male < 0) {
+                        newFormData.underageChildrenFemaleCount = '';
                     }
                 } else { // underageChildrenFemaleCount
                     const female = parseInt(value, 10);
                     if (!isNaN(female) && female >= 0 && female <= total) {
                         newFormData.underageChildrenMaleCount = (total - female).toString();
+                    } else if (isNaN(female) || female < 0) {
+                        newFormData.underageChildrenMaleCount = '';
                     }
                 }
+            } else {
+                newFormData.underageChildrenMaleCount = '';
+                newFormData.underageChildrenFemaleCount = '';
             }
         }
-        
+
         // Update the state
         setFormData(newFormData);
 
@@ -692,12 +723,21 @@ const RegistrationPage: React.FC = () => {
             const stepTouched: Record<string, boolean> = {};
 
             (SECTIONS[currentStep].fields as Array<keyof FormData>).forEach(key => {
+                // Skip validation for conditional fields if their condition isn't met
+                if (key === 'partyRoleOther' && formData.partyRole !== 'Другая') return;
+                if (key === 'centralOfficeAssistant' && !formData.ldprResources.includes("Помощь сотрудников Центрального аппарата")) {
+                    // Only validate if 'Помощь сотрудников Центрального аппарата' is selected
+                    // and the field is required based on its own logic (e.g. if it's generally required)
+                    // For now, it's not required if trigger is off.
+                    return; 
+                }
+
                 stepTouched[key] = true;
                 const error = validateField(key, formData);
                 if (error) stepErrors[key] = error;
             });
 
-            if (currentStep === 1) {
+            if (currentStep === 1) { // Contact Info - otherLinks validation
                 formData.otherLinks.forEach((link, index) => {
                     const key = `otherLinks.${index}.url`;
                     stepTouched[key] = true;
@@ -706,16 +746,67 @@ const RegistrationPage: React.FC = () => {
                 });
             }
 
-            if (currentStep === 2) {
+            if (currentStep === 2) { // Education validation
                 formData.education.forEach((edu, index) => {
-                    Object.keys(edu).forEach(field => {
+                    // Iterate through specific fields that are validated by validateEducationItemField
+                    // instead of Object.keys(edu) which might include dynamic/internal keys
+                    (['level', 'organization', 'postgraduateType', 'postgraduateOrganization', 'degreeType', 'titleType'] as Array<keyof Education>).forEach(field => {
+                        // Apply conditional validation for postgraduate, degree, title fields
+                        if (field === 'postgraduateType' && edu.hasPostgraduate !== 'Да') return;
+                        if (field === 'postgraduateOrganization' && (edu.hasPostgraduate !== 'Да' || !edu.postgraduateType)) return;
+                        if (field === 'degreeType' && edu.hasDegree !== 'Да') return;
+                        if (field === 'titleType' && edu.hasTitle !== 'Да') return;
+
                         const key = `education.${index}.${field}`;
                         stepTouched[key] = true;
-                        const error = validateEducationItemField(field as keyof Education, edu);
+                        const error = validateEducationItemField(field, edu);
                         if(error) stepErrors[key] = error;
                     });
                 });
             }
+
+            if (currentStep === 3) { // Language validation
+                formData.foreignLanguages.forEach((lang, index) => {
+                    const key = `foreignLanguages.${index}.name`;
+                    stepTouched[key] = true;
+                    const error = validateLanguageItemField('name', lang);
+                    if (error) stepErrors[key] = error;
+                });
+                formData.russianFederationLanguages.forEach((lang, index) => {
+                    const key = `russianFederationLanguages.${index}.name`;
+                    stepTouched[key] = true;
+                    const error = validateLanguageItemField('name', lang);
+                    if (error) stepErrors[key] = error;
+                });
+            }
+
+            if (currentStep === 4) { // Work experience validation
+                formData.workExperience.forEach((work, index) => {
+                    (['organization', 'position', 'startDate'] as Array<keyof WorkExperience>).forEach(field => {
+                        const key = `workExperience.${index}.${field}`;
+                        stepTouched[key] = true;
+                        const error = validateWorkItemField(field, work);
+                        if(error) stepErrors[key] = error;
+                    });
+                });
+            }
+
+            if (currentStep === 7) { // Social Organizations validation
+                formData.socialOrganizations.forEach((org, index) => {
+                    (['name', 'position', 'years'] as Array<keyof SocialOrganization>).forEach(field => {
+                        const key = `socialOrganizations.${index}.${field}`;
+                        stepTouched[key] = true;
+                        const error = validateSocialOrgItemField(field, org);
+                        if(error) stepErrors[key] = error;
+                    });
+                });
+            }
+
+            if (currentStep === 8 && formData.professionalSphere.length !== 4) {
+                 stepErrors.professionalSphere = 'Выберите ровно 4 варианта.';
+                 stepTouched.professionalSphere = true;
+            }
+
 
             setErrors(prev => ({ ...prev, ...stepErrors }));
             setTouched(prev => ({ ...prev, ...stepTouched }));
@@ -729,6 +820,8 @@ const RegistrationPage: React.FC = () => {
                 message = 'Пожалуйста, добавьте хотя бы один язык, которым вы владеете.';
             } else if (currentStep === 4 && formData.workExperience.length === 0) {
                 message = 'Пожалуйста, добавьте хотя бы одно место работы.';
+            } else if (currentStep === 8 && formData.professionalSphere.length !== 4) {
+                message = 'Пожалуйста, выберите ровно 4 сферы профессиональной деятельности.';
             }
 
             setNotification({ message, type: 'error' });
@@ -758,30 +851,66 @@ const RegistrationPage: React.FC = () => {
         }
     };
 
+    // === UPDATED prepareDataForSubmission ===
     const prepareDataForSubmission = (data: FormData) => {
         const processedData = { ...data };
 
+        // Handle partyRoleOther
         if (processedData.partyRole === 'Другая') {
             processedData.partyRole = processedData.partyRoleOther;
         }
-        delete (processedData as any).partyRoleOther;
+        delete (processedData as any).partyRoleOther; // Remove this temp field
 
+        // Clean up custom option lists, only send selected values
         const customFields: (keyof FormData)[] = ['sportsCustom', 'recreationCustom', 'hobbiesCustom', 'ldprResourcesCustom', 'knowledgeGapsCustom'];
-        const selectionFields: (keyof FormData)[] = ['sports', 'recreation', 'hobbies', 'ldprResources', 'knowledgeGaps'];
-
         customFields.forEach(field => delete (processedData as any)[field]);
+        
+        // Remove 'Другое' placeholder from selection fields if present
+        const selectionFields: (keyof FormData)[] = ['sports', 'recreation', 'hobbies', 'ldprResources', 'knowledgeGaps'];
         selectionFields.forEach(field => {
             if (Array.isArray(processedData[field])) {
                 (processedData as any)[field] = (processedData[field] as string[]).filter(item => item !== 'Другое');
             }
         });
 
-        // Reorder at the end to ensure telegramId is first
-        const { telegramId, ...rest } = processedData;
-        return { telegramId, ...rest };
-    };
+        // Ensure number fields are actual numbers or null for backend (if model expects null=True)
+        // Or convert empty strings to null for optional number fields
+        const numberFields: Array<keyof FormData> = [
+            'childrenCount', 'childrenMaleCount', 'childrenFemaleCount',
+            'underageChildrenCount', 'underageChildrenMaleCount', 'underageChildrenFemaleCount',
+            'partyExperience'
+        ];
 
-    const handleSubmit = (e: React.FormEvent) => {
+        numberFields.forEach(field => {
+            if (processedData[field] === '' || processedData[field] === undefined) {
+                (processedData as any)[field] = null;
+            } else {
+                (processedData as any)[field] = parseInt(processedData[field] as string, 10);
+                if (isNaN((processedData as any)[field])) {
+                     (processedData as any)[field] = null; // Fallback for any parsing issue
+                }
+            }
+        });
+
+        // The drf-camel-case library will handle camelCase to snake_case conversion automatically.
+        // So we can send the data mostly as-is from the frontend's FormData structure.
+
+        // The only remaining manual adjustment is to ensure telegramId is at the root
+        // and other fields are as expected by DRF serializer.
+        const { telegramId, ...rest } = processedData;
+        
+        // Filter out any other transient or unwanted fields from formData that aren't for the backend
+        const finalBackendData: any = { ...rest };
+        if (telegramId !== undefined && telegramId !== null && telegramId !== '') {
+            finalBackendData.telegramId = telegramId;
+        }
+        
+        return finalBackendData;
+    };
+    // === END UPDATED prepareDataForSubmission ===
+
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         if (!isFormValid) {
@@ -793,24 +922,65 @@ const RegistrationPage: React.FC = () => {
         }
 
         const finalData = prepareDataForSubmission(formData);
-        const jsonString = JSON.stringify(finalData, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'registration_data.json';
-        a.click();
-        URL.revokeObjectURL(url);
-        
+        console.log("Sending data to backend:", finalData); // For debugging
+
         try {
-            window.localStorage.setItem(FORM_SUBMITTED_KEY, 'true');
-            setIsSubmitted(true);
+            const response = await fetch(BASE_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // If using CSRF protection (e.g., with SessionAuthentication in DRF),
+                    // you might need to fetch the CSRF token from a cookie and include it:
+                    // 'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify(finalData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Ошибка при отправке данных на сервер:', errorData);
+                let errorMessage = 'Ошибка при отправке формы. Пожалуйста, проверьте введенные данные.';
+                
+                // Attempt to parse specific error messages from DRF.
+                // drf-camel-case also camelizes validation errors, so keys might be camelCase.
+                if (typeof errorData === 'object' && errorData !== null) {
+                    const generalErrors = errorData.nonFieldErrors || errorData.detail;
+                    if (generalErrors) {
+                        errorMessage = Array.isArray(generalErrors) ? generalErrors[0] : generalErrors;
+                    } else {
+                        // Try to find the first field error
+                        const firstErrorKey = Object.keys(errorData)[0];
+                        if (firstErrorKey && errorData[firstErrorKey]) {
+                            // DRF errors are often arrays for fields
+                            const fieldError = Array.isArray(errorData[firstErrorKey]) ? errorData[firstErrorKey][0] : errorData[firstErrorKey];
+                            errorMessage = `${firstErrorKey}: ${fieldError}`;
+                        }
+                    }
+                } else if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                }
+                setNotification({ message: errorMessage, type: 'error' });
+                return; // Stop further execution on error
+            }
+
+            const successData = await response.json();
+            console.log('Данные успешно сохранены:', successData);
+            
+            try {
+                window.localStorage.setItem(FORM_SUBMITTED_KEY, 'true');
+                setIsSubmitted(true);
+            } catch (error) {
+                console.error('Failed to save submission status to local storage', error);
+            }
+            
+            setNotification({ message: 'Отчёт успешно отправлен и сохранен!', type: 'success' });
+
         } catch (error) {
-            console.error('Failed to save submission status', error);
+            console.error('Сетевая ошибка при отправке формы:', error);
+            setNotification({ message: 'Не удалось подключиться к серверу. Проверьте ваше интернет-соединение или попробуйте позже.', type: 'error' });
         }
-        
-        setNotification({ message: 'Отчёт успешно сформирован и скачан!', type: 'success' });
     };
+    // === END UPDATED handleSubmit ===
     
     const handleClearForm = useCallback(() => {
         setIsClearConfirmOpen(false);
@@ -1168,6 +1338,7 @@ const RegistrationPage: React.FC = () => {
                                 <button type="button" onClick={handleBack} className="px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-sm bg-white text-slate-700 border border-slate-300 hover:bg-slate-50">
                                     <ArrowLeft className="h-5 w-5" />
                                     Назад
+                                
                                 </button>
                             )}
                         </div>
@@ -1179,7 +1350,7 @@ const RegistrationPage: React.FC = () => {
                                 </button>
                             ) : (
                                 <button type="button" onClick={handleSubmit} disabled={!isFormValid} className={`px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md bg-green-600 text-white focus:outline-none focus:ring-4 focus:ring-green-300 ${!isFormValid ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'}`}>
-                                    Завершить и скачать
+                                    Завершить и отправить
                                     <Check className="h-5 w-5" />
                                 </button>
                             )}
