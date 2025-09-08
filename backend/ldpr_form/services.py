@@ -26,6 +26,7 @@ def process_form(user_id: int, status: bool, reason: str):
         password = get_random_string(10, string.ascii_lowercase)
         user.password = password
         user.login = f"{user.deputy_form.last_name}{user.deputy_form.first_name[0]}{user.deputy_form.middle_name[0]}".strip()
+        user.is_active = True
         user.save()
 
         message = "Поздравляем, вы прошли верефикацию. \n" \

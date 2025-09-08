@@ -74,7 +74,10 @@ class ProcessFormViewSet(viewsets.ViewSet):
         message = data.get('message', '')
 
         try:
-            with transaction.atomic():
+            if status_value:
+                with transaction.atomic():
+                    process_form(user_id, status_value, message)
+            else:
                 process_form(user_id, status_value, message)
         except User.DoesNotExist:
             return Response(
@@ -117,7 +120,7 @@ class ProcessFormViewSet(viewsets.ViewSet):
         return Response(
             {
                 'status': 'success',
-                'message': 'Пользователь успешно подтверждён',
+                'message': f'Пользователь успешно {"подтверждён" if status_value else "удалён"}',
                 'input_data': request.data
             },
             status=status.HTTP_202_ACCEPTED

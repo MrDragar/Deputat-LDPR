@@ -6,7 +6,7 @@ from ldpr_form.views import RegistrationFormViewSet, ProcessFormViewSet
 
 router = DefaultRouter()
 router.register('registration-forms', RegistrationFormViewSet, "RegistrationForm")
-router.register(r'', ProcessFormViewSet, basename='process-form')
+router.register(r'', ProcessFormViewSet,'process-form')
 # router.register('registration-forms/list', RegistrationFormListView.as_view(), "RegistrationForm")
 # router.register('registration-forms/list/<int:pk>',
 #                 RegistrationFormDetailView.as_view(), "RegistrationForm")

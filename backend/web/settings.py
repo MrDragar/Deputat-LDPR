@@ -119,7 +119,7 @@ REST_FRAMEWORK = {
         # Any other parsers
     ),
 }
-
+AUTH_USER_MODEL = 'ldpr_form.User'  # 'приложение.Модель'
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 

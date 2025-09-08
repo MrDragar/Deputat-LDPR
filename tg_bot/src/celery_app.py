@@ -24,5 +24,3 @@ app.conf.task_routes = {
     'src.tasks.process_user_data': {'queue': 'telegram_processing'},
     'src.tasks.*': {'queue': 'telegram_default'},
 }
-
-# app.autodiscover_tasks(['src'])

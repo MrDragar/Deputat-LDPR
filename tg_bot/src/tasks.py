@@ -3,14 +3,17 @@ import logging
 from datetime import datetime
 from typing import Dict, Any
 
-from celery import shared_task
 from aiogram import Bot
+from asgiref.sync import async_to_sync
 
 from src.celery_app import app
 from src.config import BOT_TOKEN, CHAT_ID
 
-bot = Bot(BOT_TOKEN)
 logger = logging.getLogger(__name__)
+
+
+def get_bot():
+    return Bot(BOT_TOKEN)
 
 
 @app.task(bind=True, max_retries=3)
@@ -55,20 +58,19 @@ def accept_deputat(self, user_id: int, is_accepted: bool, **kwargs) \
 @app.task(bind=False)
 def send_message(user_id: int, message: str):
     async def __send_message():
+        bot = get_bot()
         await bot.send_message(user_id, message)
     try:
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
         logger.info(f"Start sending message to {user_id}")
 
         try:
-            result = loop.run_until_complete(__send_message())
+            result = async_to_sync(__send_message)()
             return {
                 'status': 'success',
                 'timestamp': datetime.now().isoformat()
             }
         finally:
-            loop.close()
+            ...
 
     except Exception as e:
         logger.error(f"Error sending message to {user_id}: {e}")
