@@ -17,6 +17,10 @@ class NotifyError(Exception):
     ...
 
 
+class InvitingError(Exception):
+    ...
+
+
 def process_form(user_id: int, status: bool, reason: str):
     user = User.objects.get(user_id=user_id)
     if user.is_active:

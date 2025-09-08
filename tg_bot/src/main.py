@@ -6,6 +6,7 @@ from aiogram.enums import ParseMode
 
 from src.config import BOT_TOKEN
 from src.handlers.common import router as common_router
+from src.database import create_tables
 
 # Настройка логирования
 logging.basicConfig(
@@ -30,7 +31,7 @@ async def main():
 
     # Инициализация диспетчера
     dp = Dispatcher()
-
+    create_tables()
     # Регистрация роутеров
     # dp.include_router(commands_router)
     # dp.include_router(messages_router)

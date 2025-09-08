@@ -1,14 +1,15 @@
 services:
-  db:
+  db_auth:
     image: postgres:17
     environment:
-      POSTGRES_DB: ${DATABASE_NAME}
-      POSTGRES_USER: ${DATABASE_USERNAME}
-      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${DATABASE_AUTH_NAME}
+      POSTGRES_USER: ${DATABASE_AUTH_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_AUTH_PASSWORD}
+#    ports:
+#      - "5432:5432"
+    command: postgres -c listen_addresses='*'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_auth:/var/lib/postgresql/data
     env_file:
       - .env
     networks:
@@ -27,9 +28,9 @@ services:
     restart: unless-stopped
 
   # Django Backend (только клиент Celery)
-  backend:
-    build: ./backend
-    container_name: django_backend
+  backend_auth:
+    build: ./backend_auth
+    container_name: backend_auth
     ports:
       - "8000:8000"
     environment:
@@ -40,21 +41,36 @@ services:
       ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
       
       DATABASE_ENGINE: ${DATABASE_ENGINE}
-      DATABASE_NAME: ${DATABASE_NAME}
-      DATABASE_USERNAME: ${DATABASE_USERNAME}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-      DATABASE_HOST: ${DATABASE_HOST}
-      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_AUTH_NAME}
+      DATABASE_USERNAME: ${DATABASE_AUTH_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_AUTH_PASSWORD}
+      DATABASE_HOST: db_auth
+      DATABASE_PORT: ${DATABASE_AUTH_PORT}
     env_file:
       - .env
     depends_on:
       - redis
-      - db
+      - db_auth
     networks:
       - app_network
     restart: unless-stopped
 
-  # Telegram Bot (сервер Celery)
+  db_tg:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${DATABASE_TG_NAME}
+      POSTGRES_USER: ${DATABASE_TG_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_TG_PASSWORD}
+#    ports:
+#      - "5432:5432"
+    command: postgres -c listen_addresses='*'
+    volumes:
+      - postgres_data_tg:/var/lib/postgresql/data
+    env_file:
+      - .env
+    networks:
+      - app_network
+
   tg_bot:
     build: ./tg_bot
     container_name: telegram_bot
@@ -67,15 +83,16 @@ services:
       CHAT_ID: ${TELEGRAM_CHAT_ID}
 
       DATABASE_ENGINE: ${DATABASE_ENGINE}
-      DATABASE_NAME: ${DATABASE_NAME}
-      DATABASE_USERNAME: ${DATABASE_USERNAME}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
-      DATABASE_HOST: ${DATABASE_HOST}
-      DATABASE_PORT: ${DATABASE_PORT}      
+      DATABASE_NAME: ${DATABASE_TG_NAME}
+      DATABASE_USERNAME: ${DATABASE_TG_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_TG_PASSWORD}
+      DATABASE_HOST: db_tg
+      DATABASE_PORT: ${DATABASE_TG_PORT}
     env_file:
       - .env
     depends_on:
       - redis
+      - db_tg
     networks:
       - app_network
     restart: unless-stopped
@@ -92,6 +109,13 @@ services:
       BASE_URL: ${BACKEND_BASE_URL}
       BOT_TOKEN: ${TELEGRAM_API_TOKEN}
       CHAT_ID: ${TELEGRAM_CHAT_ID}
+
+      DATABASE_ENGINE: ${DATABASE_ENGINE}
+      DATABASE_NAME: ${DATABASE_TG_NAME}
+      DATABASE_USERNAME: ${DATABASE_TG_USERNAME}
+      DATABASE_PASSWORD: ${DATABASE_TG_PASSWORD}
+      DATABASE_HOST: db_tg
+      DATABASE_PORT: ${DATABASE_TG_PORT}
     env_file:
       - .env
     depends_on:
@@ -103,7 +127,8 @@ services:
 
 volumes:
   redis_data:
-  postgres_data:
+  postgres_data_auth:
+  postgres_data_tg:
 
 networks:
   app_network:

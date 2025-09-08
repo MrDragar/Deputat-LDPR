@@ -21,6 +21,5 @@ app.conf.update(
 # Маршрутизация задач
 app.conf.task_routes = {
     'src.tasks.send_message': {'queue': 'telegram_messages'},
-    'src.tasks.process_user_data': {'queue': 'telegram_processing'},
     'src.tasks.*': {'queue': 'telegram_default'},
 }

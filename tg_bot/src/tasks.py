@@ -8,6 +8,8 @@ from asgiref.sync import async_to_sync
 
 from src.celery_app import app
 from src.config import BOT_TOKEN, CHAT_ID
+from src.services.user import create_user
+from src.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -16,16 +18,13 @@ def get_bot():
     return Bot(BOT_TOKEN)
 
 
-@app.task(bind=True, max_retries=3)
-def accept_deputat(self, user_id: int, is_accepted: bool, **kwargs) \
+@app.task()
+def accept_deputat(user_id: int) \
         -> Dict[str, Any]:
     async def __accept_deputat():
-        if not is_accepted:
-            return await bot.send_message(
-                chat_id=user_id,
-                text=f"К сожалению, вы не прошли верефикацию. Попробуйте пройти её заново."
-            )
-        link = await bot.create_chat_invite_link(CHAT_ID, member_limit=1)
+        bot = get_bot()
+        await create_user(get_db(), user_id, True)
+        link = await bot.create_chat_invite_link(CHAT_ID, creates_join_request=True)
         return await bot.send_message(
             chat_id=user_id,
             text=f"Поздравляем, вы прошли верефикацию. Присоединяйтесь к чату депутатов ЛДПР: {link}"
@@ -42,20 +41,22 @@ def accept_deputat(self, user_id: int, is_accepted: bool, **kwargs) \
 
             return {
                 'status': 'success',
-                'message_id': result.message_id,
-                'chat_id': user_id,
                 'timestamp': datetime.now().isoformat()
             }
 
         finally:
             loop.close()
-
+    
     except Exception as e:
-        print(f"Error sending message to {user_id}: {e}")
-        raise self.retry(exc=e)
+        logger.error(f"Error sending message to {user_id}: {e}")
+        return {
+            'status': 'error',
+            'message': str(e),
+            'timestamp': datetime.now().isoformat()
+        }
 
 
-@app.task(bind=False)
+@app.task()
 def send_message(user_id: int, message: str):
     async def __send_message():
         bot = get_bot()

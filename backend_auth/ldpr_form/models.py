@@ -1,8 +1,9 @@
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
-from django.contrib.auth.models import AbstractUser, PermissionsMixin, Group, \
+from django.contrib.auth.models import PermissionsMixin, Group, \
     Permission
-from django.db import models
 from django.core.exceptions import ValidationError
+from django.db import models
+
 from ldpr_form import constants
 
 
