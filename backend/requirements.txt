@@ -15,3 +15,4 @@ vk_api~=11.10.0
 pandas~=2.3.2
 openpyxl~=3.1.5
 drf_camel_case==1.0.2
+djangorestframework-simplejwt==5.5.1

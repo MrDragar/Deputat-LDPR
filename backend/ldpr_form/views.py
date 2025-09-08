@@ -10,6 +10,7 @@ from .models import RegistrationForm, User
 from .serializers import RegistrationFormSerializer, UserCreationSerializer, \
     ProcessFormSerializer
 from .services import process_form, UserIsActiveError, NotifyError
+from .permissions import IsAuthenticated, IsAdmin, IsAdminOrCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +24,7 @@ class RegistrationFormViewSet(viewsets.ModelViewSet):
         user__is_active=False
     )
     serializer_class = RegistrationFormSerializer
+    permission_classes = [IsAdminOrCoordinator]
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -48,12 +50,18 @@ class RegistrationFormViewSet(viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    def get_permissions(self):
+        if self.action == 'create':
+            return []
+        return super().get_permissions()
+
 
 class ProcessFormViewSet(viewsets.ViewSet):
     """
     ViewSet для управления статусом пользователей
     """
     serializer_class = ProcessFormSerializer
+    permission_classes = [IsAdminOrCoordinator]
 
     @action(detail=False, methods=['post'])
     def process_form(self, request):
@@ -100,11 +108,11 @@ class ProcessFormViewSet(viewsets.ViewSet):
         except NotifyError:
             return Response(
                 {
-                    'status': 'error',
-                    'message': f'Ошибка при отправке сообщения в телеграм',
+                    'status': 'error' if status_value else 'success',
+                    'message': f'Ошибка при отправке сообщения в телеграм 'if status_value else 'Пользователь не получил уведомление об отклонении заявки.',
                     'input_data': request.data
                 },
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST if status_value else status.HTTP_200_OK
             )
         except Exception as e:
             logger.error(f"Error processing user status: {e}")

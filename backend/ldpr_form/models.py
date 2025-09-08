@@ -32,8 +32,8 @@ class UserManager(BaseUserManager):
 
 class User(AbstractBaseUser, PermissionsMixin):
     user_id = models.IntegerField(primary_key=True, blank=False)
-    login = models.CharField(max_length=50, unique=True, verbose_name="Логин", null=True)
-    password = models.CharField(max_length=100, verbose_name="Пароль", null=True)
+    login = models.CharField(max_length=50, unique=True, verbose_name="Логин", null=True, blank=True)
+    password = models.CharField(max_length=100, verbose_name="Пароль", null=True, blank=True)
     is_active = models.BooleanField(default=False, verbose_name="Активный")
     
     groups = models.ManyToManyField(
@@ -41,7 +41,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name='groups',
         blank=True,
         help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
-        related_name="ldpr_user_set",  # Уникальное related_name
+        related_name="ldpr_user_set",
         related_query_name="ldpr_user",
     )
     user_permissions = models.ManyToManyField(
@@ -62,7 +62,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     role = models.CharField(
         max_length=20,
         choices=SYSTEM_ROLES,
-        default='user',
+        default='deputy',
         verbose_name="Роль"
     )
 
