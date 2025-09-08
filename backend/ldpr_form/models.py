@@ -1,9 +1,11 @@
-# ldpr_form/models.py
+from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.models import AbstractUser, PermissionsMixin, Group, \
+    Permission
 from django.db import models
 from django.core.exceptions import ValidationError
-from ldpr_form import constants # Импортируем наши константы
+from ldpr_form import constants
 
-# Custom validator for JSONField storing lists of strings
+
 def validate_list_of_strings(value):
     """
     Валидатор для JSONField, чтобы убедиться, что он содержит список строк.
@@ -14,12 +16,94 @@ def validate_list_of_strings(value):
         if not isinstance(item, str):
             raise ValidationError('All items in the list must be strings.')
 
+
+class UserManager(BaseUserManager):
+    def create_user(self, login=None, password=None, **extra_fields):
+        user = self.model(login=login, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, login, password=None, **extra_fields):
+        extra_fields.setdefault('is_active', True)
+        extra_fields.setdefault('role', 'admin')
+        return self.create_user(login, password, **extra_fields)
+
+
+class User(AbstractBaseUser, PermissionsMixin):
+    user_id = models.IntegerField(primary_key=True, blank=False)
+    login = models.CharField(max_length=50, unique=True, verbose_name="Логин", null=True)
+    password = models.CharField(max_length=100, verbose_name="Пароль", null=True)
+    is_active = models.BooleanField(default=False, verbose_name="Активный")
+    
+    groups = models.ManyToManyField(
+        Group,
+        verbose_name='groups',
+        blank=True,
+        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+        related_name="ldpr_user_set",  # Уникальное related_name
+        related_query_name="ldpr_user",
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        verbose_name='user permissions',
+        blank=True,
+        help_text='Specific permissions for this user.',
+        related_name="ldpr_user_permissions_set",  # Уникальное related_name
+        related_query_name="ldpr_user_permissions",
+    )
+
+    SYSTEM_ROLES = [
+        ('deputy', 'Депутат'),
+        ('coordinator', 'Координатор'),
+        ('admin', 'Администратор'),
+    ]
+
+    role = models.CharField(
+        max_length=20,
+        choices=SYSTEM_ROLES,
+        default='user',
+        verbose_name="Роль"
+    )
+
+    date_joined = models.DateTimeField(auto_now_add=True,
+                                       verbose_name="Дата регистрации")
+    last_login = models.DateTimeField(auto_now=True,
+                                      verbose_name="Последний вход")
+    objects = UserManager()
+    USERNAME_FIELD = 'login'
+    REQUIRED_FIELDS = ["user_id"]
+
+    class Meta:
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
+
+    def __str__(self):
+        if self.login:
+            return self.login
+        if self.deputy_form:
+            return (f"{self.deputy_form.first_name} "
+                    f"{self.deputy_form.middle_name} "
+                    f"{self.deputy_form.last_name}")
+        return self.user_id
+
+    @property
+    def is_staff(self):
+        return self.role in ['admin', 'coordinator']
+
+    def has_perm(self, perm, obj=None):
+        return self.is_staff
+
+    def has_module_perms(self, app_label):
+        return self.is_staff
+
+
 class RegistrationForm(models.Model):
     """
     Основная модель для хранения данных анкеты депутата.
     """
-    # Основная информация (Section 0)
-    telegram_id = models.CharField(max_length=255, unique=True, blank=True, null=True, verbose_name="ID пользователя Telegram", help_text="ID пользователя Telegram (опционально, может быть получен из URL)")
+    # telegram_id = models.CharField(max_length=255, unique=True, verbose_name="ID пользователя Telegram", help_text="ID пользователя Telegram (опционально, может быть получен из URL)")
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="deputy_form", null=False, primary_key=True)
     last_name = models.CharField(max_length=255, verbose_name="Фамилия")
     first_name = models.CharField(max_length=255, verbose_name="Имя")
     middle_name = models.CharField(max_length=255, blank=True, verbose_name="Отчество")
@@ -34,7 +118,6 @@ class RegistrationForm(models.Model):
     vk_group = models.URLField(blank=True, verbose_name="Ссылка на сообщество ВКонтакте") # <-- blank=True
     telegram_channel = models.URLField(blank=True, verbose_name="Ссылка на телеграм-канал") # <-- blank=True
     personal_site = models.URLField(blank=True, verbose_name="Ссылка на персональный сайт") # <-- blank=True
-    # other_links is a related model
 
     # Семья (Section 5)
     marital_status = models.CharField(max_length=50, choices=constants.MARITAL_STATUS_CHOICES, verbose_name="Семейное положение")
@@ -54,7 +137,7 @@ class RegistrationForm(models.Model):
 
     # Общественная деятельность (Section 7)
     representative_body_name = models.CharField(max_length=255, verbose_name="Наименование представительного органа")
-    representative_body_level = models.CharField(max_length=50, choices=constants.make_choices_from_list(constants.REPRESENTATIVE_BODY_LEVELS), verbose_name="Уровень представительного органа")
+    representative_body_level = models.CharField(max_length=80, choices=constants.make_choices_from_list(constants.REPRESENTATIVE_BODY_LEVELS), verbose_name="Уровень представительного органа")
     representative_body_position = models.CharField(max_length=255, verbose_name="Должность в представительном органе")
     committee_name = models.CharField(max_length=255, verbose_name="Название комиссии или комитета")
     committee_status = models.CharField(max_length=50, choices=constants.make_choices_from_list(constants.COMMITTEE_STATUSES), verbose_name="Статус в комиссии или комитете")
@@ -91,7 +174,7 @@ class RegistrationForm(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.last_name} {self.first_name} ({self.telegram_id or 'N/A'})"
+        return f"{self.last_name} {self.first_name} ({self.user.user_id or 'N/A'})"
 
 
 class OtherLink(models.Model):
