@@ -1054,7 +1054,7 @@ const RegistrationPage: React.FC = () => {
             case 2:
                 return (
                     <>
-                        {formData.education.length === 0 && <EmptyStatePlaceholder imageUrl="images/sokol_ldpr_1.webp" />}
+                        {formData.education.length === 0 && <EmptyStatePlaceholder imageUrl="/images/registration_form/sokol_ldpr_1.webp" />}
                         <div className="space-y-4 mb-4">
                             {formData.education.map((edu, index) => <EducationItem key={index} index={index} item={edu} onChange={handleEducationChange} onRemove={removeEducation} onBlur={handleEducationItemBlur} errors={errors} touched={touched} />)}
                         </div>
@@ -1064,7 +1064,7 @@ const RegistrationPage: React.FC = () => {
             case 3:
                 return (
                     <div className="space-y-8">
-                        {formData.foreignLanguages.length === 0 && formData.russianFederationLanguages.length === 0 && <EmptyStatePlaceholder imageUrl="images/sokol_ldpr_2.webp" />}
+                        {formData.foreignLanguages.length === 0 && formData.russianFederationLanguages.length === 0 && <EmptyStatePlaceholder imageUrl="/images/registration_form/sokol_ldpr_2.webp" />}
                         <div>
                             <label className="block text-base font-semibold text-gray-800 mb-4">Владение иностранными языками</label>
                             {formData.foreignLanguages.length > 0 && (
@@ -1088,7 +1088,7 @@ const RegistrationPage: React.FC = () => {
             case 4:
                 return (
                     <>
-                        {formData.workExperience.length === 0 && <EmptyStatePlaceholder imageUrl="images/sokol_ldpr_3.webp" />}
+                        {formData.workExperience.length === 0 && <EmptyStatePlaceholder imageUrl="/images/registration_form/sokol_ldpr_3.webp" />}
                         <div className="space-y-4 mb-4">
                             {formData.workExperience.map((work, index) => <WorkItem key={index} index={index} item={work} onChange={handleWorkExperienceChange} onRemove={removeWorkExperience} onBlur={handleWorkItemBlur} errors={errors} touched={touched} />)}
                         </div>

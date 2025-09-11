@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
@@ -15,22 +14,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('authToken'));
   const navigate = useNavigate();
 
+  // Слушатель для синхронизации состояния между вкладками
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
-    setIsAuthenticated(!!token);
+    const syncAuth = () => {
+      setIsAuthenticated(!!localStorage.getItem('authToken'));
+    };
+
+    window.addEventListener('storage', syncAuth);
+    return () => {
+      window.removeEventListener('storage', syncAuth);
+    };
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    await api.login(username, password);
-    setIsAuthenticated(true);
-    navigate('/');
+    try {
+      await api.login(username, password);
+      setIsAuthenticated(true);
+      navigate('/auth/forms'); // Перенаправляем к формам после успешного входа
+    } catch (error) {
+      console.error('Login failed:', error);
+      // Здесь можно добавить обработку ошибок, например, показать уведомление
+      throw error;
+    }
   }, [navigate]);
 
   const logout = useCallback(() => {
     api.logout();
     setIsAuthenticated(false);
-    navigate('/login');
-  }, [navigate]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ isAuthenticated, login, logout }}>

@@ -61,6 +61,8 @@ COPY --from=builder_host /app/dist /usr/share/nginx/html
 COPY --from=builder_auth /app/dist /usr/share/nginx/html/auth/
 COPY --from=builder_registration_form /app/dist /usr/share/nginx/html/registration_form/
 
+RUN mkdir -p  /usr/share/nginx/html/images/
+COPY --from=builder_registration_form /app/dist/images/registration_form /usr/share/nginx/html/images/registration_form
 # Копируем кастомный nginx конфиг (если нужно)
 COPY host/nginx.conf /etc/nginx/conf.d/default.conf
 

@@ -125,35 +125,16 @@ services:
       - app_network
     restart: unless-stopped
 
-#  frontend_registration_form:
-#    build: ./frontend_registration_form
-#    ports:
-#      - "84:80"
-#    restart: always
-#    networks:
-#      - frontend_network
-#
-#  frontend_auth:
-#    build: ./frontend_auth
-#    ports:
-#      - "85:80"
-#    restart: always
-#    networks:
-#      - frontend_network
-
   frontends:
     build: ./frontends # Укажите путь к вашему новому хост-приложению
     ports:
       - "80:80" # Пусть он будет основным и слушает порт 80
     restart: always
-#    networks:
-#      - frontend_network
     environment:
 #      PREFIX_FRONTEND_AUTH_HOST: frontend_auth
       APP_PREFIX: PREFIX_
       ASSET_DIR: /usr/share/nginx/html
-#    depends_on:
-#       - frontend_auth
+
 
 volumes:
   redis_data:

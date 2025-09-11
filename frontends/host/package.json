@@ -1,5 +1,5 @@
 {
-  "name": "vite-module-federation-host",
+  "name": "лдпр---host-application",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,12 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "vite": "^7.1.5",
-    "auth": "^1.2.3",
+    "@originjs/vite-plugin-federation": "^1.4.1",
+    "@vitejs/plugin-react": "^5.0.2",
+    "auth": "^1.0.2",
+    "lucide-react": "^0.544.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "@vitejs/plugin-react": "^5.0.2",
-    "@originjs/vite-plugin-federation": "^1.4.1"
+    "react-router-dom": "^6.25.1",
+    "vite": "^7.1.5"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

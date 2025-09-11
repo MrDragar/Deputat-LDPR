@@ -1,4 +1,3 @@
-
 import {defineConfig, loadEnv} from 'vite';
 import react from '@vitejs/plugin-react';
 import federation from '@originjs/vite-plugin-federation';
@@ -16,7 +15,7 @@ export default defineConfig(({ mode }) => {
         registration_form: '/registration_form/assets/remoteEntry.js',
       },
       // Shared dependencies to avoid loading them multiple times.
-      shared: ['react', 'react-dom'],
+      shared: ['react', 'react-dom', 'react-router-dom'],
     }),
   ],
   // Recommended build options for module federation to work smoothly.

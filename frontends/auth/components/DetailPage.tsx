@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api, APIError } from '../services/api';
 import { RegistrationForm } from '../types';
 import Spinner from './Spinner';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../App'; // Импортируем локальный хук
 import ConfirmationModal from './ui/ConfirmationModal';
 import TextInput from './ui/TextInput';
 

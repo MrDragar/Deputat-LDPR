@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { api, APIError } from '../services/api';
 import { RegistrationForm } from '../types';
 import FormCard from './FormCard';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../App';
 import Spinner from './Spinner';
 import EmptyStatePlaceholder from './ui/EmptyStatePlaceholder';
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
 import TextInput from './ui/TextInput';
+import { useAuth } from '../App'; // Импортируем локальный хук
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
