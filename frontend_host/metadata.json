@@ -1,0 +1,5 @@
+{
+  "name": "Vite Module Federation Host",
+  "description": "A React application built with Vite that acts as a host and dynamically loads a remote application ('auth') using vite-plugin-federation. This serves as the shell or container for micro-frontends.",
+  "requestFramePermissions": []
+}
