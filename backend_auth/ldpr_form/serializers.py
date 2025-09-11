@@ -197,7 +197,7 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
             user = User.objects.get(user_id=validated_data.pop("telegram_id"))
         except User.DoesNotExist:
             raise serializers.ValidationError({'telegram_id': 'User with this telegram_id does not exist'})
-        if user.deputy_form:
+        if hasattr(user, 'deputy_form') and user.deputy_form:
             user.deputy_form.delete()
 
         other_links_data = validated_data.pop('other_links', [])

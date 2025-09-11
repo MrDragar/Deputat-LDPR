@@ -125,6 +125,23 @@ services:
       - app_network
     restart: unless-stopped
 
+  frontend_registration_form:
+    build: ./frontend_registration_form
+    ports:
+      - "84:80"
+    restart: always
+    networks:
+      - frontend_network
+
+  frontend_auth:
+    build: ./frontend_auth
+    ports:
+      - "85:80"
+    restart: always
+    networks:
+      - frontend_network
+
+
 volumes:
   redis_data:
   postgres_data_auth:
@@ -132,4 +149,6 @@ volumes:
 
 networks:
   app_network:
+    driver: bridge
+  frontend_network:
     driver: bridge
