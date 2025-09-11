@@ -13,9 +13,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({ children }
 const AppRoutes: React.FC = () => (
     <Routes>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+        <Route path="/forms" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
         <Route path="/form/:id" element={<ProtectedRoute><DetailPage /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/forms" />} />
     </Routes>
 );
 

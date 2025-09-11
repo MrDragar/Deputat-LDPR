@@ -141,19 +141,20 @@ services:
 #    networks:
 #      - frontend_network
 
-  frontend_host:
-    build: ./frontend_host # Укажите путь к вашему новому хост-приложению
+  frontends:
+    build: ./frontends # Укажите путь к вашему новому хост-приложению
     ports:
       - "80:80" # Пусть он будет основным и слушает порт 80
     restart: always
-    networks:
-      - frontend_network
+#    networks:
+#      - frontend_network
     environment:
-      PREFIX_FRONTEND_AUTH_HOST: frontend_auth
+#      PREFIX_FRONTEND_AUTH_HOST: frontend_auth
       APP_PREFIX: PREFIX_
       ASSET_DIR: /usr/share/nginx/html
-    depends_on:
-       - frontend_auth
+#    depends_on:
+#       - frontend_auth
+
 volumes:
   redis_data:
   postgres_data_auth:
