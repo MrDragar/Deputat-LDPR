@@ -32,9 +32,6 @@ async def main():
     # Инициализация диспетчера
     dp = Dispatcher()
     create_tables()
-    # Регистрация роутеров
-    # dp.include_router(commands_router)
-    # dp.include_router(messages_router)
     dp.include_router(common_router)
 
     logger.info("Starting Telegram Bot")
