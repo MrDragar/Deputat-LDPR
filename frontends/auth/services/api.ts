@@ -1,7 +1,7 @@
 import { RegistrationForm } from '../types';
 
 // This is now configured via environment variables.
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const BASE_URL = import.meta.env.VITE_FRONTEND_AUTH_HOST || 'http://localhost:8000';
 
 const getAuthToken = (): string | null => {
   return localStorage.getItem('authToken');

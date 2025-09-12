@@ -45,7 +45,7 @@ const FORM_SUBMITTED_KEY = 'ldpr_form_submitted';
 
 // === UPDATED: Base URL from environment variable now points directly to the API endpoint ===
 // For example: REACT_APP_BASE_URL=http://localhost:8000/api/registration-forms/
-const BASE_API_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:8000/api/registration-forms/'; 
+const BASE_URL = import.meta.env.VITE_FRONTEND_AUTH_HOST || 'http://localhost:8000';
 
 // Helper validation functions for dynamic list items
 const validateEducationItemField = (field: keyof Education, item: Education): string | undefined => {
@@ -925,7 +925,7 @@ const RegistrationPage: React.FC = () => {
         console.log("Sending data to backend:", finalData); // For debugging
 
         try {
-            const response = await fetch(BASE_API_URL, {
+            const response = await fetch(`${BASE_URL}/api/registration_forms/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

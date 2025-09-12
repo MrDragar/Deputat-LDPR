@@ -124,6 +124,8 @@ services:
     restart: always
     networks:
       - app_network
+    ports:
+      - "85:80"
     environment:
       APP_PREFIX: PREFIX_FRONTEND
       ASSET_DIR: /usr/share/nginx/html
