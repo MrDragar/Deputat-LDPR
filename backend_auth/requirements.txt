@@ -10,9 +10,6 @@ aiogram~=3.22.0
 requests~=2.32.5
 pillow~=11.3.0
 beautifulsoup4~=4.13.4
-Telethon~=1.40.0
-vk_api~=11.10.0
-pandas~=2.3.2
-openpyxl~=3.1.5
 drf_camel_case==1.0.2
 djangorestframework-simplejwt==5.5.1
+cryptography==45.0.7

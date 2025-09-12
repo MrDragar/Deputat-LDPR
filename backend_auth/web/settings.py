@@ -9,9 +9,21 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
+import logging
 import os
 from datetime import timedelta
 from pathlib import Path
+
+
+def get_secret(key, default):
+    if os.path.isfile(f"/run/secrets/{key}"):
+        with open(f"/run/secrets/{key}") as f:
+            res = f.read()
+            return res
+    logging.warning(f"/run/assert/{key} not found")
+    value = os.getenv(key, default)
+    return value
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -132,8 +144,11 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': True,
-}
 
+    'ALGORITHM': 'RS256',
+    'SIGNING_KEY': get_secret('jwt_private_key', ""),
+    'VERIFYING_KEY': get_secret('jwt_public_key', ""),
+}
 AUTH_USER_MODEL = 'ldpr_form.User'  # 'приложение.Модель'
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
