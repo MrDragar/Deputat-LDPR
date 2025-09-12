@@ -5,8 +5,6 @@ services:
       POSTGRES_DB: ${DATABASE_AUTH_NAME}
       POSTGRES_USER: ${DATABASE_AUTH_USERNAME}
       POSTGRES_PASSWORD: ${DATABASE_AUTH_PASSWORD}
-#    ports:
-#      - "5432:5432"
     command: postgres -c listen_addresses='*'
     volumes:
       - postgres_data_auth:/var/lib/postgresql/data
@@ -27,7 +25,6 @@ services:
       - app_network
     restart: unless-stopped
 
-  # Django Backend (только клиент Celery)
   backend_auth:
     build: ./backend_auth
     container_name: backend_auth
@@ -61,8 +58,6 @@ services:
       POSTGRES_DB: ${DATABASE_TG_NAME}
       POSTGRES_USER: ${DATABASE_TG_USERNAME}
       POSTGRES_PASSWORD: ${DATABASE_TG_PASSWORD}
-#    ports:
-#      - "5432:5432"
     command: postgres -c listen_addresses='*'
     volumes:
       - postgres_data_tg:/var/lib/postgresql/data
@@ -78,7 +73,7 @@ services:
       - ./tg_bot:/app
     environment:
       REDIS_URL: "redis://redis:6379/0"
-      BASE_URL: ${BACKEND_BASE_URL}
+      BASE_URL: ${BASE_URL}
       BOT_TOKEN: ${TELEGRAM_API_TOKEN}
       CHAT_ID: ${TELEGRAM_CHAT_ID}
 
@@ -97,7 +92,6 @@ services:
       - app_network
     restart: unless-stopped
 
-  # Celery Worker для Telegram Bot
   tg_celery_worker:
     build: ./tg_bot
     container_name: tg_bot_celery_worker
@@ -106,7 +100,7 @@ services:
       - ./tg_bot:/app
     environment:
       REDIS_URL: "redis://redis:6379/0"
-      BASE_URL: ${BACKEND_BASE_URL}
+      BASE_URL: ${BASE_URL}
       BOT_TOKEN: ${TELEGRAM_API_TOKEN}
       CHAT_ID: ${TELEGRAM_CHAT_ID}
 
@@ -126,16 +120,28 @@ services:
     restart: unless-stopped
 
   frontends:
-    build: ./frontends # Укажите путь к вашему новому хост-приложению
-    ports:
-      - "80:80" # Пусть он будет основным и слушает порт 80
+    build: ./frontends
     restart: always
+    networks:
+      - app_network
     environment:
-#      PREFIX_FRONTEND_AUTH_HOST: frontend_auth
-      APP_PREFIX: PREFIX_
+      APP_PREFIX: PREFIX_FRONTEND
       ASSET_DIR: /usr/share/nginx/html
-
-
+      PREFIX_FRONTEND_BACKEND_URL: ${BASE_URL}
+    env_file:
+      - .env
+  nginx_proxy:
+    build: ./proxy
+    container_name: nginx_proxy
+    ports:
+      - "80:80"
+    depends_on:
+      - backend_auth
+      - frontends
+    networks:
+      - app_network
+    restart: unless-stopped
+    
 volumes:
   redis_data:
   postgres_data_auth:
@@ -143,6 +149,4 @@ volumes:
 
 networks:
   app_network:
-    driver: bridge
-  frontend_network:
     driver: bridge

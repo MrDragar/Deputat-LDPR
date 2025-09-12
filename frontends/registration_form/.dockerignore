@@ -1,7 +1,9 @@
 node_modules
 dist
-Dockerfile
+../Dockerfile
 .dockerignore
 .git
 .gitignore
+.env
+.env.local
 

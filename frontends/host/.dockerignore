@@ -4,4 +4,6 @@ dist
 .dockerignore
 .git
 .gitignore
+.env
+.env.local
 
