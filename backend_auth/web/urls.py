@@ -11,8 +11,8 @@ router.register('registration-forms', RegistrationFormViewSet, "RegistrationForm
 router.register(r'', ProcessFormViewSet,'process-form')
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/', include(router.urls)),
+    path('api/auth/admin/', admin.site.urls),
+    path('api/auth/', include(router.urls)),
     path('api/auth/', include([
         path('login/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
         path('refresh/', TokenRefreshView.as_view(), name='token_refresh'),

@@ -43,10 +43,10 @@ ENV PYTHONUNBUFFERED=1
 
 # Switch to non-root user
 USER appuser
-
-RUN mkdir -p /run/secrets && \
-    chmod 755 /run/secrets && \
-    chown nobody:nogroup /run/secrets || true
+#
+#RUN mkdir -p /run/secrets && \
+#    chmod 755 /run/secrets && \
+#    chown nobody:nogroup /run/secrets || true
 
 # Expose the application port
 EXPOSE 8000

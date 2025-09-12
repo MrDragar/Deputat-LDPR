@@ -82,21 +82,21 @@ export const api = {
   },
 
   getForms: async (): Promise<RegistrationForm[]> => {
-    const response = await fetch(`${BASE_URL}/api/registration-forms/`, {
+    const response = await fetch(`${BASE_URL}/api/auth/registration-forms/`, {
       headers: getAuthHeaders(),
     });
     return handleApiResponse(response);
   },
 
   getFormById: async (id: string): Promise<RegistrationForm> => {
-    const response = await fetch(`${BASE_URL}/api/registration-forms/${id}/`, {
+    const response = await fetch(`${BASE_URL}/api/auth/registration-forms/${id}/`, {
       headers: getAuthHeaders(),
     });
     return handleApiResponse(response);
   },
 
   processForm: async (id: number, status: boolean, message: string): Promise<any> => {
-    const response = await fetch(`${BASE_URL}/api/process_form/`, {
+    const response = await fetch(`${BASE_URL}/api/auth/process_form/`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({
