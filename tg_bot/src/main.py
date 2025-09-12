@@ -5,7 +5,7 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
 from src.config import BOT_TOKEN
-from src.handlers.common import router as common_router
+from src.handlers import router
 from src.database import create_tables
 
 # Настройка логирования
@@ -32,7 +32,7 @@ async def main():
     # Инициализация диспетчера
     dp = Dispatcher()
     create_tables()
-    dp.include_router(common_router)
+    dp.include_router(router)
 
     logger.info("Starting Telegram Bot")
 
