@@ -1,0 +1,42 @@
+/* Default scrollbar for light backgrounds */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8; /* gray-400 */
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* gray-500 */
+}
+
+/* Custom scrollbar for the dark sidebar */
+.sidebar-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-track {
+  background: #1e293b; /* slate-800 */
+  border-radius: 4px;
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb {
+  background: #475569; /* slate-600 */
+  border-radius: 4px;
+  border: 2px solid #1e293b; /* slate-800 */
+}
+.sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* slate-500 */
+}
+
+/* Hide scrollbar on mobile devices */
+@media (max-width: 1023px) { /* Tailwind's lg breakpoint is 1024px */
+  .mobile-scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .mobile-scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}

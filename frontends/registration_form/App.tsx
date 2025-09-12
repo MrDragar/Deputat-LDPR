@@ -1,8 +1,8 @@
 import RegistrationPage from './pages/RegistrationPage';
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
 import { Routes, Route, Navigate } from 'react-router-dom';
-
+import "./App.css"
 
 interface AuthAppProps {
   isAuthenticated: boolean;
@@ -24,10 +24,10 @@ export const useAuth = (): AuthAppProps => {
 
 const App: React.FC<AuthAppProps> = ({ isAuthenticated, login, logout }) => {
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
-        <Routes>
-          <Route path="/*" element={<RegistrationPage />} />
-        </Routes>
+      <AuthContext.Provider value={{isAuthenticated, login, logout}}>
+          <Routes>
+              <Route path="/*" element={<RegistrationPage/>}/>
+          </Routes>
       </AuthContext.Provider>
   );
 };

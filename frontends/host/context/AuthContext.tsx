@@ -30,7 +30,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await api.login(username, password);
       setIsAuthenticated(true);
-      navigate('/auth/forms'); // Перенаправляем к формам после успешного входа
+      navigate('/'); // Перенаправляем к формам после успешного входа
     } catch (error) {
       console.error('Login failed:', error);
       // Здесь можно добавить обработку ошибок, например, показать уведомление
