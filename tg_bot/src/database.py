@@ -1,5 +1,5 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 
 from src.config import DATABASE_NAME, DATABASE_PORT, DATABASE_PASSWORD, \
     DATABASE_USERNAME, DATABASE_HOST
@@ -21,3 +21,6 @@ def get_db():
         yield db
     finally:
         db.close()
+
+def get_db_sync() -> Session:
+    return SessionLocal()
