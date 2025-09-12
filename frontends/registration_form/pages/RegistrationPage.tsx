@@ -925,7 +925,7 @@ const RegistrationPage: React.FC = () => {
         console.log("Sending data to backend:", finalData); // For debugging
 
         try {
-            const response = await fetch(`${BASE_URL}/api/registration_forms/`, {
+            const response = await fetch(`${BASE_URL}api/auth/registration-forms/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
