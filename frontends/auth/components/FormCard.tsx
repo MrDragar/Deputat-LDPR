@@ -15,7 +15,7 @@ const FormCard: React.FC<FormCardProps> = ({ form }) => {
   });
 
   return (
-    <Link to={`/form/${form.user}`} className="block group">
+    <Link to={`${form.user}`} className="block group">
       <div className="bg-white border border-gray-200 rounded-lg p-5 h-full flex flex-col justify-between transition-all duration-300 ease-in-out hover:shadow-lg hover:shadow-blue-500/10 hover:border-blue-500 transform hover:-translate-y-1">
         <div>
             <h3 className="text-lg font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{fullName}</h3>

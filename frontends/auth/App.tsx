@@ -59,7 +59,7 @@ const App: React.FC<AuthAppProps> = ({ isAuthenticated, login, logout }) => {
         />
         
         <Route 
-          path="form/:id" 
+          path="forms/:id"
           element={
             <ProtectedRoute>
               <DetailPage />
