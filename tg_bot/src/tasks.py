@@ -23,7 +23,7 @@ def accept_deputat(user_id: int) \
         -> Dict[str, Any]:
     async def __accept_deputat():
         bot = get_bot()
-        await create_user(get_db_sync(), user_id, True)
+        create_user(get_db_sync(), user_id, True)
         link = await bot.create_chat_invite_link(CHAT_ID, creates_join_request=True)
         return await bot.send_message(
             chat_id=user_id,
