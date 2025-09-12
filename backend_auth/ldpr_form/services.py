@@ -43,7 +43,10 @@ def process_form(user_id: int, status: bool, reason: str):
                   f"{reason}"
         user.delete()
 
-    result = celery_app.send_task("src.tasks.send_message", args=(user_id, message)).get()
+    result = celery_app.send_task("src.tasks.send_message",
+                                  args=(user_id, message)).get()
     logger.info(result)
+    result = celery_app.send_task("src.tasks.accept_deputat",
+                                  args=(user_id, )).get()
     if result["status"] != "success":
         raise NotifyError(result["message"])

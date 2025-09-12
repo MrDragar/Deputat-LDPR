@@ -4,6 +4,13 @@ from src.models import User
 
 
 def create_user(db: Session, user_id: int, status: bool = False) -> User:
+    user = db.query(User).filter(User.id == user_id).first()
+    if user:
+        user.status = True
+        db.commit()
+        db.refresh(user)
+        return user
+
     user = User(id=user_id, status=status)
     db.add(user)
     db.commit()
