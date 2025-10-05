@@ -2,49 +2,88 @@ import React, { createContext, useState, useContext, useEffect, useCallback } fr
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 
+interface User {
+  login: string;
+  role: string;
+}
+
 interface AuthContextType {
   isAuthenticated: boolean;
+  user: User | null;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
+
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!localStorage.getItem('authToken'));
+  const [user, setUser] = useState<User | null>(null);
   const navigate = useNavigate();
 
-  // Слушатель для синхронизации состояния между вкладками
+  // Функция для декодирования JWT токена
+  const decodeJWT = useCallback((token: string): User | null => {
+    try {
+      const payload = token.split('.')[1];
+      const decoded = JSON.parse(atob(payload));
+      return {
+        login: decoded.login,
+        role: decoded.role
+      };
+    } catch (error) {
+      console.error('Failed to decode JWT:', error);
+      return null;
+    }
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      setIsAuthenticated(true);
+      const userData = decodeJWT(token);
+      setUser(userData);
+    }
+  }, [decodeJWT]);
+
   useEffect(() => {
     const syncAuth = () => {
-      setIsAuthenticated(!!localStorage.getItem('authToken'));
+      const token = localStorage.getItem('authToken');
+      setIsAuthenticated(!!token);
+      if (token) {
+        setUser(decodeJWT(token));
+      } else {
+        setUser(null);
+      }
     };
 
     window.addEventListener('storage', syncAuth);
     return () => {
       window.removeEventListener('storage', syncAuth);
     };
-  }, []);
+  }, [decodeJWT]);
 
   const login = useCallback(async (username: string, password: string) => {
     try {
-      await api.login(username, password);
+      const response = await api.login(username, password);
       setIsAuthenticated(true);
-      navigate('/'); // Перенаправляем к формам после успешного входа
+      const userData = decodeJWT(response.access);
+      setUser(userData);
+      navigate('/');
     } catch (error) {
       console.error('Login failed:', error);
-      // Здесь можно добавить обработку ошибок, например, показать уведомление
       throw error;
     }
-  }, [navigate]);
+  }, [navigate, decodeJWT]);
 
   const logout = useCallback(() => {
     api.logout();
     setIsAuthenticated(false);
+    setUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
