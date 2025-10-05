@@ -46,7 +46,10 @@ def process_form(user_id: int, status: bool, reason: str):
     result = celery_app.send_task("src.tasks.send_message",
                                   args=(user_id, message)).get()
     logger.info(result)
-    result = celery_app.send_task("src.tasks.accept_deputat",
-                                  args=(user_id, )).get()
     if result["status"] != "success":
         raise NotifyError(result["message"])
+    if status:
+        result = celery_app.send_task("src.tasks.accept_deputat",
+                                      args=(user_id, )).get()
+        if result["status"] != "success":
+            raise NotifyError(result["message"])
