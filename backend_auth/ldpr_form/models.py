@@ -103,7 +103,6 @@ class RegistrationForm(models.Model):
     """
     Основная модель для хранения данных анкеты депутата.
     """
-    # telegram_id = models.CharField(max_length=255, unique=True, verbose_name="ID пользователя Telegram", help_text="ID пользователя Telegram (опционально, может быть получен из URL)")
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="deputy_form", null=False, primary_key=True)
     last_name = models.CharField(max_length=255, verbose_name="Фамилия")
     first_name = models.CharField(max_length=255, verbose_name="Имя")

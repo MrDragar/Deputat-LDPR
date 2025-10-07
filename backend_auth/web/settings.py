@@ -35,7 +35,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # The secret key
 SECRET_KEY = os.environ.get("SECRET_KEY", "1223")
 
-DEBUG = bool(os.environ.get("DEBUG", default=0))
+DEBUG = os.environ.get("DEBUG", default="True").lower() == "true"
+
 LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1").split(",")
@@ -51,7 +52,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'ldpr_form',
-    'jwt_auth'
+    'jwt_auth',
+    'month_report'
 ]
 
 MIDDLEWARE = [
