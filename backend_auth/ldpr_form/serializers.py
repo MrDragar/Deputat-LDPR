@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import (
+from users.models import (
     RegistrationForm, OtherLink, Education, WorkExperience,
     ForeignLanguage, RussianFederationLanguage, SocialOrganization, User
 )

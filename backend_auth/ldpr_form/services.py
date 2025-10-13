@@ -4,7 +4,7 @@ import string
 from django.utils.crypto import get_random_string
 
 from web.celery_app import celery_app
-from ldpr_form.models import User
+from users.models import User
 
 logger = logging.getLogger(__name__)
 

@@ -39,7 +39,9 @@ DEBUG = os.environ.get("DEBUG", default="True").lower() == "true"
 
 LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "127.0.0.1").split(",")
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "http://127.0.0.1").split(",")
+CSRF_TRUSTED_ORIGINS = "http://localhost:8000"
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Application definition
 INSTALLED_APPS = [
@@ -49,16 +51,20 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "corsheaders",
     'rest_framework',
     'rest_framework_simplejwt',
     'ldpr_form',
     'jwt_auth',
-    'month_report'
+    'month_report',
+    'users'
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -153,7 +159,7 @@ SIMPLE_JWT = {
     'SIGNING_KEY': get_secret('jwt_private_key', ""),
     'VERIFYING_KEY': get_secret('jwt_public_key', ""),
 }
-AUTH_USER_MODEL = 'ldpr_form.User'  # 'приложение.Модель'
+AUTH_USER_MODEL = 'users.User'  # 'приложение.Модель'
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -170,6 +176,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'api/auth/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

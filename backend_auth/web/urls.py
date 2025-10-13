@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/auth/admin/', admin.site.urls),
     path('api/auth/', include(router.urls)),
     path('api/auth/', include("jwt_auth.urls")),
+    path('api/auth/users', include("users.urls"))
 ]
 
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns

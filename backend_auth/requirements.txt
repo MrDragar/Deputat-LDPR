@@ -13,3 +13,5 @@ beautifulsoup4~=4.13.4
 drf_camel_case==1.0.2
 djangorestframework-simplejwt==5.5.1
 cryptography==45.0.7
+django-cors-headers==4.9.0
+whitenoise==6.11.0

@@ -1,16 +1,16 @@
 import logging
 
-from rest_framework import generics, viewsets
+from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.db import transaction
 
-from .models import RegistrationForm, User
+from users.models import RegistrationForm, User
 from .serializers import RegistrationFormSerializer, UserCreationSerializer, \
     ProcessFormSerializer
 from .services import process_form, UserIsActiveError, NotifyError
-from .permissions import IsAuthenticated, IsAdmin, IsAdminOrCoordinator
+from .permissions import IsAdminOrCoordinator
 
 logger = logging.getLogger(__name__)
 

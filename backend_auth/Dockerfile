@@ -47,7 +47,7 @@ USER appuser
 #RUN mkdir -p /run/secrets && \
 #    chmod 755 /run/secrets && \
 #    chown nobody:nogroup /run/secrets || true
-
+RUN python3 manage.py collectstatic --noinput
 # Expose the application port
 EXPOSE 8000
 

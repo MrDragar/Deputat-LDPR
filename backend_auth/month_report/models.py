@@ -1,6 +1,6 @@
 from django.db import models
 
-from ldpr_form.models import User
+from users.models import User
 
 
 class ReportPeriod(models.Model):
