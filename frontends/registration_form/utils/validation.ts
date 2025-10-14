@@ -3,8 +3,8 @@ import type { FormData, OtherLink } from '../types';
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\+7\d{10}$/;
 const DATE_REGEX = /^(0[1-9]|[12][0-9]|3[01])\.(0[1-9]|1[0-2])\.(19|20)\d{2}$/;
-// Updated regex to support Cyrillic domains
-export const URL_REGEX = /^(https?:\/\/)?([a-zA-Z0-9\u0400-\u04FF.-]+)\.([a-zA-Z\u0400-\u04FF]{2,})([\/\w .-]*)*\/?$/;
+// Updated regex to support Cyrillic domains and require a protocol
+export const URL_REGEX = /^https?:\/\/([a-zA-Z0-9\u0400-\u04FF.-]+)\.([a-zA-Z\u0400-\u04FF]{2,})([\/\w .-]*)*\/?$/;
 
 
 export const validateField = (name: keyof FormData, allData: FormData): string | undefined => {
