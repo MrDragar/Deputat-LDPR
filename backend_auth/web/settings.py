@@ -40,7 +40,7 @@ DEBUG = os.environ.get("DEBUG", default="True").lower() == "true"
 LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "http://127.0.0.1").split(",")
-CSRF_TRUSTED_ORIGINS = "http://localhost:8000"
+CSRF_TRUSTED_ORIGINS = ["http://localhost:8000"]
 CORS_ALLOW_ALL_ORIGINS = True
 
 # Application definition
