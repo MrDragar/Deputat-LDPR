@@ -27,7 +27,7 @@ def accept_deputat(user_id: int) \
         link = await bot.create_chat_invite_link(CHAT_ID, creates_join_request=True)
         return await bot.send_message(
             chat_id=user_id,
-            text=f"Поздравляем, вы прошли верефикацию. Присоединяйтесь к чату депутатов ЛДПР: {link.invite_link}"
+            text=f"Поздравляем, вы прошли верификацию. Присоединяйтесь к чату депутатов ЛДПР: {link.invite_link}"
         )
 
     try:
