@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Prefetch
 from users.models import User
-from ldpr_form.permissions import IsAdmin
+from ldpr_form.permissions import IsAdmin, IsAuthenticated
 from .serializers import UserSerializer
 
 
@@ -31,9 +31,15 @@ class UserDetailAPIView(APIView):
     """
     API View для получения конкретного пользователя с анкетой.
     """
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
+        if user_id != request.user.user_id and request.user.role != "admin":
+            self.permission_denied(
+                request,
+                message=getattr("Недостаточно прав", 'message', None),
+                code=getattr(402, 'code', None)
+            )
         try:
             user = User.objects.prefetch_related(
                 'deputy_form__education',
