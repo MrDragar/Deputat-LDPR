@@ -32,6 +32,7 @@ const SECTIONS = [
     { title: "Обратная связь", fields: ['ldprResources', 'centralOfficeAssistant', 'knowledgeGaps'] },
     { title: "Дополнительная информация", fields: ['additionalInfo', 'suggestions', 'talents', 'knowledgeToShare', 'superpower'] }
 ];
+const BASE_URL = import.meta.env.VITE_FRONTEND_AUTH_HOST || 'http://localhost:8000';
 
 const STEP_ICONS = [
     User, Phone, GraduationCap, Languages, Briefcase, Heart, Flag, Users, 
@@ -794,7 +795,7 @@ const RegistrationPage: React.FC = () => {
         return { telegramId, ...rest };
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
         if (!isFormValid) {
@@ -804,25 +805,62 @@ const RegistrationPage: React.FC = () => {
             if(firstInvalidStep !== -1) setCurrentStep(firstInvalidStep);
             return;
         }
-
         const finalData = prepareDataForSubmission(formData);
-        const jsonString = JSON.stringify(finalData, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'registration_data.json';
-        a.click();
-        URL.revokeObjectURL(url);
-        
         try {
-            window.localStorage.setItem(FORM_SUBMITTED_KEY, 'true');
-            setIsSubmitted(true);
+            const response = await fetch(`${BASE_URL}api/auth/registration-forms/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // If using CSRF protection (e.g., with SessionAuthentication in DRF),
+                    // you might need to fetch the CSRF token from a cookie and include it:
+                    // 'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify(finalData),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Ошибка при отправке данных на сервер:', errorData);
+                let errorMessage = 'Ошибка при отправке формы. Пожалуйста, проверьте введенные данные.';
+                
+                // Attempt to parse specific error messages from DRF.
+                // drf-camel-case also camelizes validation errors, so keys might be camelCase.
+                if (typeof errorData === 'object' && errorData !== null) {
+                    const generalErrors = errorData.nonFieldErrors || errorData.detail;
+                    if (generalErrors) {
+                        errorMessage = Array.isArray(generalErrors) ? generalErrors[0] : generalErrors;
+                    } else {
+                        // Try to find the first field error
+                        const firstErrorKey = Object.keys(errorData)[0];
+                        if (firstErrorKey && errorData[firstErrorKey]) {
+                            // DRF errors are often arrays for fields
+                            const fieldError = Array.isArray(errorData[firstErrorKey]) ? errorData[firstErrorKey][0] : errorData[firstErrorKey];
+                            errorMessage = `${firstErrorKey}: ${fieldError}`;
+                        }
+                    }
+                } else if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                }
+                setNotification({ message: errorMessage, type: 'error' });
+                return; // Stop further execution on error
+            }
+
+            const successData = await response.json();
+            console.log('Данные успешно сохранены:', successData);
+            
+            try {
+                window.localStorage.setItem(FORM_SUBMITTED_KEY, 'true');
+                setIsSubmitted(true);
+            } catch (error) {
+                console.error('Failed to save submission status to local storage', error);
+            }
+            
+            setNotification({ message: 'Отчёт успешно отправлен и сохранен!', type: 'success' });
+
         } catch (error) {
-            console.error('Failed to save submission status', error);
-        }
-        
-        setNotification({ message: 'Отчёт успешно сформирован и скачан!', type: 'success' });
+            console.error('Сетевая ошибка при отправке формы:', error);
+            setNotification({ message: 'Не удалось подключиться к серверу. Проверьте ваше интернет-соединение или попробуйте позже.', type: 'error' });
+        }    
     };
     
     const handleClearForm = useCallback(() => {
