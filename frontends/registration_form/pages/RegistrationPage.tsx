@@ -1239,7 +1239,7 @@ const RegistrationPage: React.FC = () => {
                                 </button>
                             ) : (
                                 <button type="button" onClick={handleSubmit} disabled={!isFormValid} className={`px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md bg-green-600 text-white focus:outline-none focus:ring-4 focus:ring-green-300 ${!isFormValid ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'}`}>
-                                    Завершить и скачать
+                                    Завершить и отправить
                                     <Check className="h-5 w-5" />
                                 </button>
                             )}

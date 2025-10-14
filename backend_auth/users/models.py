@@ -246,7 +246,7 @@ class ForeignLanguage(models.Model):
 class RussianFederationLanguage(models.Model):
     """Модель для хранения информации о языках народов РФ."""
     form = models.ForeignKey(RegistrationForm, on_delete=models.CASCADE, related_name='russian_federation_languages', verbose_name="Анкета")
-    name = models.CharField(max_length=100, choices=constants.make_choices_from_list(constants.RUSSIAN_FEDERATION_LANGUAGES), verbose_name="Язык")
+    name = models.CharField(max_length=100, verbose_name="Язык")
     level = models.CharField(max_length=100, choices=constants.make_choices_from_list(constants.LANGUAGE_LEVELS), verbose_name="Уровень владения")
 
     class Meta:

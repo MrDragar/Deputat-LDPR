@@ -117,8 +117,8 @@ class WorkExperienceSerializer(serializers.ModelSerializer):
 
 class ForeignLanguageSerializer(serializers.ModelSerializer):
     """Сериализатор для модели ForeignLanguage."""
-    name = serializers.ChoiceField(
-        choices=constants.make_choices_from_list(constants.FOREIGN_LANGUAGES),
+    name = serializers.CharField(
+        max_length=100,
         required=True,
         error_messages={'required': 'Это поле обязательно для заполнения'})
     level = serializers.ChoiceField(
@@ -132,8 +132,7 @@ class ForeignLanguageSerializer(serializers.ModelSerializer):
 
 class RussianFederationLanguageSerializer(serializers.ModelSerializer):
     """Сериализатор для модели RussianFederationLanguage."""
-    name = serializers.ChoiceField(choices=constants.make_choices_from_list(
-        constants.RUSSIAN_FEDERATION_LANGUAGES), required=True, error_messages={
+    name = serializers.CharField(max_length=100, required=True, error_messages={
         'required': 'Это поле обязательно для заполнения'})
     level = serializers.ChoiceField(
         choices=constants.make_choices_from_list(constants.LANGUAGE_LEVELS),
