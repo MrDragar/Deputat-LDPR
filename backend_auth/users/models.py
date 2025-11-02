@@ -66,7 +66,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         default='deputy',
         verbose_name="Роль"
     )
-
+    region = models.CharField(max_length=255, choices=constants.make_choices_from_list(constants.REGIONS), verbose_name="Регион", null=True, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True,
                                        verbose_name="Дата регистрации")
     last_login = models.DateTimeField(auto_now=True,

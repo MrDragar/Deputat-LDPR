@@ -23,14 +23,20 @@ class Report(models.Model):
     }
     id = models.IntegerField(primary_key=True, verbose_name="Номер поля")
     report_period = models.ForeignKey(ReportPeriod, on_delete=models.CASCADE, related_name="vdpg_reports")
-    start_date = models.DateField(verbose_name="Дата начала")
-    end_date = models.DateField(verbose_name="Дата конца")
+    start_date = models.DateField(verbose_name="Дата начала", null=True, blank=True)
+    end_date = models.DateField(verbose_name="Дата конца", null=True, blank=True)
     name = models.CharField(max_length=100, null=True, blank=True, verbose_name="Название поля")
     theme = models.CharField(choices=THEMES)
 
     class Meta:
         verbose_name = "Поле отчёта"
         verbose_name_plural = "Поля отчёта"
+
+
+class RegionReport(models.Model):
+    id = models.IntegerField(primary_key=True)
+    region_name = models.CharField(max_length=100)
+    report_period = models.ForeignKey(ReportPeriod, on_delete=models.CASCADE, related_name="region_reports")
 
 
 class DeputyRecord(models.Model):
@@ -41,7 +47,7 @@ class DeputyRecord(models.Model):
     }
     id = models.IntegerField(primary_key=True)
     deputy = models.ForeignKey(User, on_delete=models.CASCADE, related_name="period_records", null=True, blank=True)
-    report_period = models.ForeignKey(ReportPeriod, on_delete=models.CASCADE, related_name="deputies_records")
+    region_report = models.ForeignKey(RegionReport, on_delete=models.CASCADE, related_name="deputies_records")
     fio = models.CharField(max_length=100, verbose_name="ФИО")
     is_available = models.BooleanField(default=True, verbose_name="Статус активности")
     level = models.CharField(choices=LEVELS, null=False)
