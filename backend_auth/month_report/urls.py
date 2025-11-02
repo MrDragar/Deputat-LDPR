@@ -9,6 +9,6 @@ router.register(r'region-reports', views.RegionReportViewSet)
 router.register(r'deputy-records', views.DeputyRecordViewSet)
 router.register(r'report-records', views.ReportRecordViewSet)
 
-urlpatterns = [
-    path('api/', include(router.urls)),
-]
+# urlpatterns = [
+#     path('api/', include(router.urls)),
+# ]

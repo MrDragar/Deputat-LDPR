@@ -4,7 +4,7 @@ from users.models import User
 
 
 class ReportPeriod(models.Model):
-    id = models.IntegerField(primary_key=True, verbose_name="Номер")
+    # id = models.IntegerField(primary_key=True, verbose_name="Номер", auto_created=True)
     start_date = models.DateField(verbose_name="Дата начала")
     end_date = models.DateField(verbose_name="Дата окончания")
 
@@ -21,7 +21,7 @@ class Report(models.Model):
         "reg_event": "Мероприятие в рег. парламенте",
         "letter": "Письмо"
     }
-    id = models.IntegerField(primary_key=True, verbose_name="Номер поля")
+    # id = models.IntegerField(primary_key=True, verbose_name="Номер поля", auto_created=True, blank=True)
     report_period = models.ForeignKey(ReportPeriod, on_delete=models.CASCADE, related_name="vdpg_reports")
     start_date = models.DateField(verbose_name="Дата начала", null=True, blank=True)
     end_date = models.DateField(verbose_name="Дата конца", null=True, blank=True)
@@ -34,7 +34,7 @@ class Report(models.Model):
 
 
 class RegionReport(models.Model):
-    id = models.IntegerField(primary_key=True)
+    # id = models.IntegerField(primary_key=True, auto_created=True, blank=True)
     region_name = models.CharField(max_length=100)
     report_period = models.ForeignKey(ReportPeriod, on_delete=models.CASCADE, related_name="region_reports")
 
@@ -45,7 +45,7 @@ class DeputyRecord(models.Model):
         "ACR": "Депутаты административных центров регионов",
         "ZS": "Депутаты Законодательных собраний регионов"
     }
-    id = models.IntegerField(primary_key=True)
+    # id = models.IntegerField(primary_key=True, auto_created=True, blank=True)
     deputy = models.ForeignKey(User, on_delete=models.CASCADE, related_name="period_records", null=True, blank=True)
     region_report = models.ForeignKey(RegionReport, on_delete=models.CASCADE, related_name="deputies_records")
     fio = models.CharField(max_length=100, verbose_name="ФИО")
@@ -59,6 +59,7 @@ class DeputyRecord(models.Model):
 
 
 class ReportRecord(models.Model):
+    # id = models.IntegerField(primary_key=True, auto_created=True, blank=True)
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name="records")
     deputy_record = models.ForeignKey(DeputyRecord, on_delete=models.CASCADE, related_name="report_records")
     link = models.URLField(null=False, verbose_name="Ссылка")
