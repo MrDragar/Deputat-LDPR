@@ -191,6 +191,24 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
             'telegram_id': {'read_only': True}
         }
 
+    def validate_children_count(self, value):
+        return 0 if value == "" else value
+
+    def validate_children_male_count(self, value):
+        return 0 if value == "" else value
+
+    def validate_children_female_count(self, value):
+        return 0 if value == "" else value
+
+    def validate_underage_children_count(self, value):
+        return 0 if value == "" else value
+
+    def validate_underage_children_male_count(self, value):
+        return 0 if value == "" else value
+
+    def validate_underage_children_female_count(self, value):
+        return 0 if value == "" else value
+
     def create(self, validated_data):
         try:
             user = User.objects.get(user_id=validated_data.pop("telegram_id"))
