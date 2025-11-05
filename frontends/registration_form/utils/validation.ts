@@ -59,9 +59,12 @@ export const validateField = (name: keyof FormData, allData: FormData): string |
         case 'childrenFemaleCount':
         case 'childrenMaleCount': {
             const total = parseInt(allData.childrenCount, 10) || 0;
+            if (total > 0 && value === '') {
+                return 'Это поле обязательно для заполнения';
+            }
             const male = parseInt(allData.childrenMaleCount, 10) || 0;
             const female = parseInt(allData.childrenFemaleCount, 10) || 0;
-            if (total > 0 && male + female > total) {
+            if (male + female > total) {
                 return 'Сумма мальчиков и девочек не может превышать общее количество детей.';
             }
             if (total > 0 && allData.childrenMaleCount && allData.childrenFemaleCount && male + female !== total) {
@@ -73,6 +76,9 @@ export const validateField = (name: keyof FormData, allData: FormData): string |
         case 'underageChildrenFemaleCount':
         case 'underageChildrenMaleCount': {
              const totalUnderage = parseInt(allData.underageChildrenCount, 10) || 0;
+             if (totalUnderage > 0 && value === '') {
+                return 'Это поле обязательно для заполнения';
+             }
              const maleUnderage = parseInt(allData.underageChildrenMaleCount, 10) || 0;
              const femaleUnderage = parseInt(allData.underageChildrenFemaleCount, 10) || 0;
              if (totalUnderage > 0 && maleUnderage + femaleUnderage > totalUnderage) {
@@ -82,11 +88,11 @@ export const validateField = (name: keyof FormData, allData: FormData): string |
                 return 'Сумма несовершеннолетних мальчиков и девочек должна быть равна общему количеству несовершеннолетних детей.';
             }
              const maleTotal = parseInt(allData.childrenMaleCount, 10) || 0;
-             if (maleTotal > 0 && maleUnderage > maleTotal) {
+             if (maleUnderage > maleTotal) {
                  return 'Несовершеннолетних мальчиков не может быть больше, чем всего мальчиков.';
              }
              const femaleTotal = parseInt(allData.childrenFemaleCount, 10) || 0;
-             if (femaleTotal > 0 && femaleUnderage > femaleTotal) {
+             if (femaleUnderage > femaleTotal) {
                  return 'Несовершеннолетних девочек не может быть больше, чем всего девочек.';
              }
              return undefined;
@@ -94,11 +100,11 @@ export const validateField = (name: keyof FormData, allData: FormData): string |
 
         case 'underageChildrenCount': {
             const total = parseInt(allData.childrenCount, 10) || 0;
-            if (total > 0 && !value) {
+            if (total > 0 && value === '') {
                 return 'Это поле обязательно для заполнения';
             }
-            const underage = parseInt(allData.underageChildrenCount, 10) || 0;
-            if (total > 0 && underage > total) {
+            const underage = parseInt(value as string, 10) || 0;
+            if (underage > total) {
                 return 'Несовершеннолетних детей не может быть больше, чем общее количество детей.';
             }
             return undefined;
