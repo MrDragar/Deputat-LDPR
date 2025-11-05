@@ -191,23 +191,16 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
             'telegram_id': {'read_only': True}
         }
 
-    def validate_children_count(self, value):
-        return 0 if value == "" else value
+    def to_internal_value(self, data):
+        integer_fields = [
+            'children_count', 'children_male_count', 'children_female_count',
+            'underage_children_count', 'underage_children_male_count',
+            'underage_children_female_count'
+        ]
 
-    def validate_children_male_count(self, value):
-        return 0 if value == "" else value
-
-    def validate_children_female_count(self, value):
-        return 0 if value == "" else value
-
-    def validate_underage_children_count(self, value):
-        return 0 if value == "" else value
-
-    def validate_underage_children_male_count(self, value):
-        return 0 if value == "" else value
-
-    def validate_underage_children_female_count(self, value):
-        return 0 if value == "" else value
+        for field in integer_fields:
+            if field in data and data[field] == "":
+                data[field] = 0
 
     def create(self, validated_data):
         try:
