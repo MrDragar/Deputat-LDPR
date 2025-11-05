@@ -201,6 +201,7 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
         for field in integer_fields:
             if field in data and data[field] == "":
                 data[field] = 0
+        return super(RegistrationFormSerializer, self).to_internal_value(data)
 
     def create(self, validated_data):
         try:
