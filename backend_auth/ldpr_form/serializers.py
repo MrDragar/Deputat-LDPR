@@ -11,7 +11,7 @@ def empty_string_to_none(value):
 
 
 class UserCreationSerializer(serializers.Serializer):
-    telegram_id = serializers.CharField(max_length=255, required=True)
+    telegram_id = serializers.CharField(max_length=1023, required=True)
 
     def create(self, validation_data):
         try:
@@ -40,7 +40,7 @@ class EducationSerializer(serializers.ModelSerializer):
         choices=constants.make_choices_from_list(constants.EDUCATION_LEVELS),
         required=True,
         error_messages={'required': 'Это поле обязательно для заполнения'})
-    organization = serializers.CharField(max_length=255, required=True,
+    organization = serializers.CharField(max_length=1023, required=True,
                                          error_messages={
                                              'required': 'Это поле обязательно для заполнения'})
 
@@ -49,7 +49,7 @@ class EducationSerializer(serializers.ModelSerializer):
     postgraduate_type = serializers.ChoiceField(
         choices=constants.make_choices_from_list(constants.POSTGRADUATE_TYPES),
         required=False, allow_blank=True, allow_null=True)
-    postgraduate_organization = serializers.CharField(max_length=255,
+    postgraduate_organization = serializers.CharField(max_length=1023,
                                                       required=False,
                                                       allow_blank=True)
 
@@ -99,10 +99,10 @@ class EducationSerializer(serializers.ModelSerializer):
 
 class WorkExperienceSerializer(serializers.ModelSerializer):
     """Сериализатор для модели WorkExperience."""
-    organization = serializers.CharField(max_length=255, required=True,
+    organization = serializers.CharField(max_length=1023, required=True,
                                          error_messages={
                                              'required': 'Это поле обязательно для заполнения'})
-    position = serializers.CharField(max_length=255, required=True,
+    position = serializers.CharField(max_length=1023, required=True,
                                      error_messages={
                                          'required': 'Это поле обязательно для заполнения'})
     start_date = serializers.CharField(max_length=50, required=True,
@@ -145,9 +145,9 @@ class RussianFederationLanguageSerializer(serializers.ModelSerializer):
 
 class SocialOrganizationSerializer(serializers.ModelSerializer):
     """Сериализатор для модели SocialOrganization."""
-    name = serializers.CharField(max_length=255, required=True, error_messages={
+    name = serializers.CharField(max_length=1023, required=True, error_messages={
         'required': 'Это поле обязательно для заполнения'})
-    position = serializers.CharField(max_length=255, required=True,
+    position = serializers.CharField(max_length=1023, required=True,
                                      error_messages={
                                          'required': 'Это поле обязательно для заполнения'})
     years = serializers.CharField(max_length=50, required=True, error_messages={
@@ -181,7 +181,7 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
             'invalid': 'Неверный формат даты. Используйте ДД.ММ.ГГГГ.'
         }
     )
-    telegram_id = serializers.CharField(max_length=255, required=True, write_only=True)
+    telegram_id = serializers.CharField(max_length=1023, required=True, write_only=True)
 
     class Meta:
         model = RegistrationForm

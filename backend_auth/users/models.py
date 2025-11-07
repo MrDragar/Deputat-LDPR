@@ -66,7 +66,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         default='deputy',
         verbose_name="Роль"
     )
-    region = models.CharField(max_length=255, choices=constants.make_choices_from_list(constants.REGIONS), verbose_name="Регион", null=True, blank=True)
+    region = models.CharField(max_length=1023, choices=constants.make_choices_from_list(constants.REGIONS), verbose_name="Регион", null=True, blank=True)
     date_joined = models.DateTimeField(auto_now_add=True,
                                        verbose_name="Дата регистрации")
     last_login = models.DateTimeField(auto_now=True,
@@ -104,12 +104,12 @@ class RegistrationForm(models.Model):
     Основная модель для хранения данных анкеты депутата.
     """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="deputy_form", null=False, primary_key=True)
-    last_name = models.CharField(max_length=255, verbose_name="Фамилия")
-    first_name = models.CharField(max_length=255, verbose_name="Имя")
-    middle_name = models.CharField(max_length=255, blank=True, verbose_name="Отчество")
+    last_name = models.CharField(max_length=1023, verbose_name="Фамилия")
+    first_name = models.CharField(max_length=1023, verbose_name="Имя")
+    middle_name = models.CharField(max_length=1023, blank=True, verbose_name="Отчество")
     gender = models.CharField(max_length=10, choices=constants.GENDER_CHOICES, verbose_name="Пол")
     birth_date = models.DateField(verbose_name="Дата рождения")
-    region = models.CharField(max_length=255, choices=constants.make_choices_from_list(constants.REGIONS), verbose_name="Регион")
+    region = models.CharField(max_length=1023, choices=constants.make_choices_from_list(constants.REGIONS), verbose_name="Регион")
 
     # Контактная информация (Section 1)
     phone = models.CharField(max_length=20, verbose_name="Телефон")
@@ -131,15 +131,15 @@ class RegistrationForm(models.Model):
 
     # Партийная деятельность (Section 6)
     party_experience = models.PositiveIntegerField(verbose_name="Стаж в партии (лет)")
-    party_position = models.CharField(max_length=255, verbose_name="Должность в партии")
+    party_position = models.CharField(max_length=1023, verbose_name="Должность в партии")
     # party_role stores the final value, including custom 'Другая'
-    party_role = models.CharField(max_length=255, verbose_name="Должность в региональном отделении")
+    party_role = models.CharField(max_length=1023, verbose_name="Должность в региональном отделении")
 
     # Общественная деятельность (Section 7)
-    representative_body_name = models.CharField(max_length=255, verbose_name="Наименование представительного органа")
+    representative_body_name = models.CharField(max_length=1023, verbose_name="Наименование представительного органа")
     representative_body_level = models.CharField(max_length=80, choices=constants.make_choices_from_list(constants.REPRESENTATIVE_BODY_LEVELS), verbose_name="Уровень представительного органа")
-    representative_body_position = models.CharField(max_length=255, verbose_name="Должность в представительном органе")
-    committee_name = models.CharField(max_length=255, verbose_name="Название комиссии или комитета")
+    representative_body_position = models.CharField(max_length=1023, verbose_name="Должность в представительном органе")
+    committee_name = models.CharField(max_length=1023, verbose_name="Название комиссии или комитета")
     committee_status = models.CharField(max_length=50, choices=constants.make_choices_from_list(constants.COMMITTEE_STATUSES), verbose_name="Статус в комиссии или комитете")
     # social_organizations is a related model
 
@@ -194,11 +194,11 @@ class Education(models.Model):
     """Модель для хранения информации об образовании."""
     form = models.ForeignKey(RegistrationForm, on_delete=models.CASCADE, related_name='education', verbose_name="Анкета")
     level = models.CharField(max_length=100, choices=constants.make_choices_from_list(constants.EDUCATION_LEVELS), verbose_name="Уровень образования")
-    organization = models.CharField(max_length=255, verbose_name="Название образовательной организации")
+    organization = models.CharField(max_length=1023, verbose_name="Название образовательной организации")
 
     has_postgraduate = models.CharField(max_length=3, choices=constants.HAS_CHOICES, default='Нет', verbose_name="Послевузовское профессиональное образование")
     postgraduate_type = models.CharField(max_length=100, blank=True, choices=constants.make_choices_from_list(constants.POSTGRADUATE_TYPES), verbose_name="Вид послевузовского образования") # <-- blank=True
-    postgraduate_organization = models.CharField(max_length=255, blank=True, verbose_name="Наименование учреждения послевузовского образования") # <-- blank=True
+    postgraduate_organization = models.CharField(max_length=1023, blank=True, verbose_name="Наименование учреждения послевузовского образования") # <-- blank=True
 
     has_degree = models.CharField(max_length=3, choices=constants.HAS_CHOICES, default='Нет', verbose_name="Наличие ученой степени")
     degree_type = models.CharField(max_length=100, blank=True, choices=constants.make_choices_from_list(constants.DEGREE_TYPES), verbose_name="Ученая степень") # <-- blank=True
@@ -217,8 +217,8 @@ class Education(models.Model):
 class WorkExperience(models.Model):
     """Модель для хранения информации о местах работы."""
     form = models.ForeignKey(RegistrationForm, on_delete=models.CASCADE, related_name='work_experience', verbose_name="Анкета")
-    organization = models.CharField(max_length=255, verbose_name="Название организации")
-    position = models.CharField(max_length=255, verbose_name="Должность")
+    organization = models.CharField(max_length=1023, verbose_name="Название организации")
+    position = models.CharField(max_length=1023, verbose_name="Должность")
     start_date = models.CharField(max_length=50, verbose_name="Месяц и год начала работы") # Format "01.2020" as per frontend
 
     class Meta:
@@ -260,8 +260,8 @@ class RussianFederationLanguage(models.Model):
 class SocialOrganization(models.Model):
     """Модель для хранения информации об общественных организациях."""
     form = models.ForeignKey(RegistrationForm, on_delete=models.CASCADE, related_name='social_organizations', verbose_name="Анкета")
-    name = models.CharField(max_length=255, verbose_name="Название организации")
-    position = models.CharField(max_length=255, verbose_name="Должность")
+    name = models.CharField(max_length=1023, verbose_name="Название организации")
+    position = models.CharField(max_length=1023, verbose_name="Должность")
     years = models.CharField(max_length=50, verbose_name="Годы участия") # Format "2018-2022" as per frontend
 
     class Meta:
