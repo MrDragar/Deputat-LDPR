@@ -8,7 +8,7 @@ from django.db import transaction
 
 from users.models import RegistrationForm, User
 from .serializers import RegistrationFormSerializer, UserCreationSerializer, \
-    ProcessFormSerializer
+    ProcessFormSerializer, RegistrationFormListSerializer
 from .services import process_form, UserIsActiveError, NotifyError
 from .permissions import IsAdminOrCoordinator
 
@@ -25,6 +25,11 @@ class RegistrationFormViewSet(viewsets.ModelViewSet):
     )
     serializer_class = RegistrationFormSerializer
     permission_classes = [IsAdminOrCoordinator]
+
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return RegistrationFormListSerializer
+        return RegistrationFormSerializer
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):

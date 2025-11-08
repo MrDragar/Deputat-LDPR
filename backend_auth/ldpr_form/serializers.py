@@ -276,6 +276,21 @@ class RegistrationFormSerializer(serializers.ModelSerializer):
                                                            **item_data)
 
 
+class RegistrationFormListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RegistrationForm
+        fields = [
+            'user',
+            'last_name',
+            'first_name',
+            'middle_name',
+            'gender',
+            'birth_date',
+            'region',
+            'created_at'
+        ]
+
+
 class ProcessFormSerializer(serializers.Serializer):
     status = serializers.BooleanField()
     message = serializers.CharField(required=False, allow_blank=True)
