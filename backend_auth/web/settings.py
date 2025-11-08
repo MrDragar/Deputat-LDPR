@@ -37,7 +37,45 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "1223")
 
 DEBUG = os.environ.get("DEBUG", default="True").lower() == "true"
 
-LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
+# LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {module} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {asctime} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple"
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "django.request":
+            {
+                "handlers": ["console"],
+                "level": "DEBUG",
+                "propagate": False
+            }
+    },
+}
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "http://127.0.0.1").split(",")
 CSRF_TRUSTED_ORIGINS = ["http://localhost:8000"]
