@@ -1,3 +1,4 @@
+
 // FIX: Corrected the import for React hooks. The original import was syntactically incorrect, causing widespread "Cannot find name" errors.
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Plus, Trash2, X, Check, ArrowLeft, ArrowRight, User, Phone, GraduationCap, Languages, Briefcase, Heart, Flag, Users, ClipboardList, Palette, MessageCircle, FilePlus2, AlertTriangle } from 'lucide-react';
@@ -19,7 +20,7 @@ import { validateField, URL_REGEX } from '../utils/validation';
 
 // Section definitions
 const SECTIONS = [
-    { title: "Основная информация", fields: ['lastName', 'firstName', 'middleName', 'gender', 'birthDate', 'region'] },
+    { title: "Основная информация", fields: ['lastName', 'firstName', 'middleName', 'gender', 'birthDate', 'region', 'occupation'] },
     { title: "Контактная информация", fields: ['phone', 'email', 'vkPage', 'vkGroup', 'telegramChannel', 'personalSite', 'otherLinks'] },
     { title: "Образование", fields: ['education'] },
     { title: "Языки", fields: ['foreignLanguages', 'russianFederationLanguages'] },
@@ -32,7 +33,6 @@ const SECTIONS = [
     { title: "Обратная связь", fields: ['ldprResources', 'centralOfficeAssistant', 'knowledgeGaps'] },
     { title: "Дополнительная информация", fields: ['additionalInfo', 'suggestions', 'talents', 'knowledgeToShare', 'superpower'] }
 ];
-const BASE_URL = import.meta.env.VITE_FRONTEND_AUTH_HOST || 'http://localhost:8000';
 
 const STEP_ICONS = [
     User, Phone, GraduationCap, Languages, Briefcase, Heart, Flag, Users, 
@@ -44,12 +44,18 @@ const FORM_STEP_KEY = 'ldpr_form_step';
 const FORM_COMPLETED_KEY = 'ldpr_form_completed';
 const FORM_SUBMITTED_KEY = 'ldpr_form_submitted';
 
+const BASE_URL = 'https://депутатлдпр.рф';
 
 // Helper validation functions for dynamic list items
 const validateEducationItemField = (field: keyof Education, item: Education): string | undefined => {
     switch (field) {
         case 'level': return item.level ? undefined : 'Это поле обязательно для заполнения';
         case 'organization': return item.organization ? undefined : 'Это поле обязательно для заполнения';
+        case 'specialty': 
+            if ((item.level === 'Высшее' || item.level === 'Среднее профессиональное') && !item.specialty) {
+                return 'Это поле обязательно для заполнения';
+            }
+            return undefined;
         case 'postgraduateType': return item.hasPostgraduate === 'Да' && !item.postgraduateType ? 'Выберите вид образования' : undefined;
         case 'postgraduateOrganization': return item.hasPostgraduate === 'Да' && item.postgraduateType && !item.postgraduateOrganization ? 'Это поле обязательно для заполнения' : undefined;
         case 'degreeType': return item.hasDegree === 'Да' && !item.degreeType ? 'Выберите ученую степень' : undefined;
@@ -113,6 +119,19 @@ const EducationItem = React.memo(({ item, index, onChange, onRemove, onBlur, err
             <div className="space-y-6">
                 <Select id={`education.${index}.level`} name="level" label="Уровень образования" options={EDUCATION_LEVELS} selected={item.level} onChange={handleFieldChange} onBlur={handleFieldBlur} required error={touched[`education.${index}.level`] ? errors[`education.${index}.level`] : undefined}/>
                 <TextInput id={`education.${index}.organization`} name="organization" label="Название образовательной организации" value={item.organization} onChange={handleFieldChange} onBlur={handleFieldBlur} required error={touched[`education.${index}.organization`] ? errors[`education.${index}.organization`] : undefined}/>
+                
+                {(item.level === 'Высшее' || item.level === 'Среднее профессиональное') && (
+                    <TextInput
+                        id={`education.${index}.specialty`}
+                        name="specialty"
+                        label="Специальность"
+                        value={item.specialty || ''}
+                        onChange={handleFieldChange}
+                        onBlur={handleFieldBlur}
+                        required
+                        error={touched[`education.${index}.specialty`] ? errors[`education.${index}.specialty`] : undefined}
+                    />
+                )}
                 
                 <RadioGroup name="hasPostgraduate" label="Послевузовское профессиональное образование" options={['Да', 'Нет']} selected={item.hasPostgraduate} onChange={handleFieldChange} />
                 {item.hasPostgraduate === 'Да' && (
@@ -270,7 +289,7 @@ const RegistrationPage: React.FC = () => {
     });
     const [errors, setErrors] = useState<Record<string, string | undefined>>({});
     const [touched, setTouched] = useState<Record<string, boolean>>({});
-    const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+    const [notification, setNotification] = useState<{ message: React.ReactNode; type: 'success' | 'error' } | null>(null);
     const [currentStep, setCurrentStep] = useState<number>(() => {
         const saved = window.localStorage.getItem(FORM_STEP_KEY);
         return saved ? JSON.parse(saved) : 0;
@@ -348,6 +367,7 @@ const RegistrationPage: React.FC = () => {
             for (const edu of data.education) {
                 if (validateEducationItemField('level', edu) ||
                     validateEducationItemField('organization', edu) ||
+                    validateEducationItemField('specialty', edu) ||
                     validateEducationItemField('postgraduateType', edu) ||
                     validateEducationItemField('postgraduateOrganization', edu) ||
                     validateEducationItemField('degreeType', edu) ||
@@ -404,7 +424,8 @@ const RegistrationPage: React.FC = () => {
 
     useEffect(() => {
         if (notification) {
-            const timer = setTimeout(() => setNotification(null), 5000);
+            const duration = notification.type === 'error' ? 30000 : 8000;
+            const timer = setTimeout(() => setNotification(null), duration);
             return () => clearTimeout(timer);
         }
     }, [notification]);
@@ -570,7 +591,7 @@ const RegistrationPage: React.FC = () => {
         setErrors(prev => ({ ...prev, [key]: error }));
     };
 
-    const addEducation = useCallback(() => addDynamicListItem('education', { level: '', organization: '', hasPostgraduate: 'Нет', postgraduateType: '', postgraduateOrganization: '', hasDegree: 'Нет', degreeType: '', hasTitle: 'Нет', titleType: '' }), [addDynamicListItem]);
+    const addEducation = useCallback(() => addDynamicListItem('education', { level: '', organization: '', specialty: '', hasPostgraduate: 'Нет', postgraduateType: '', postgraduateOrganization: '', hasDegree: 'Нет', degreeType: '', hasTitle: 'Нет', titleType: '' }), [addDynamicListItem]);
     const removeEducation = useCallback((index: number) => removeDynamicListItem('education', index), [removeDynamicListItem]);
     
     const handleEducationChange = (index: number, field: keyof Education, value: any) => {
@@ -579,7 +600,10 @@ const RegistrationPage: React.FC = () => {
             const newEducations = [...prev.education];
             const updatedItem = { ...newEducations[index] };
             (updatedItem as any)[field] = value;
-
+            
+            if (field === 'level' && value === 'Среднее общее') {
+                updatedItem.specialty = '';
+            }
             if (field === 'hasDegree' && value === 'Нет') updatedItem.degreeType = '';
             if (field === 'hasTitle' && value === 'Нет') updatedItem.titleType = '';
             if (field === 'hasPostgraduate' && value === 'Нет') {
@@ -797,23 +821,21 @@ const RegistrationPage: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         if (!isFormValid) {
             setNotification({ message: 'Пожалуйста, заполните все обязательные поля во всех разделах.', type: 'error' });
-            // Find first invalid step and navigate to it
             const firstInvalidStep = completedSteps.findIndex(c => !c);
-            if(firstInvalidStep !== -1) setCurrentStep(firstInvalidStep);
+            if (firstInvalidStep !== -1) setCurrentStep(firstInvalidStep);
             return;
         }
+
         const finalData = prepareDataForSubmission(formData);
+        
         try {
-            const response = await fetch(`${BASE_URL}api/auth/registration-forms/`, {
+            const response = await fetch(`${BASE_URL}/api/auth/registration-forms/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    // If using CSRF protection (e.g., with SessionAuthentication in DRF),
-                    // you might need to fetch the CSRF token from a cookie and include it:
-                    // 'X-CSRFToken': getCookie('csrftoken'),
                 },
                 body: JSON.stringify(finalData),
             });
@@ -821,28 +843,67 @@ const RegistrationPage: React.FC = () => {
             if (!response.ok) {
                 const errorData = await response.json();
                 console.error('Ошибка при отправке данных на сервер:', errorData);
-                let errorMessage = 'Ошибка при отправке формы. Пожалуйста, проверьте введенные данные.';
+                let errorMessage: React.ReactNode = 'Ошибка при отправке формы. Пожалуйста, проверьте введенные данные.';
                 
-                // Attempt to parse specific error messages from DRF.
-                // drf-camel-case also camelizes validation errors, so keys might be camelCase.
                 if (typeof errorData === 'object' && errorData !== null) {
                     const generalErrors = errorData.nonFieldErrors || errorData.detail;
-                    if (generalErrors) {
+                    
+                    if (generalErrors && (typeof generalErrors === 'string' || (Array.isArray(generalErrors) && typeof generalErrors[0] === 'string'))) {
                         errorMessage = Array.isArray(generalErrors) ? generalErrors[0] : generalErrors;
                     } else {
-                        // Try to find the first field error
-                        const firstErrorKey = Object.keys(errorData)[0];
-                        if (firstErrorKey && errorData[firstErrorKey]) {
-                            // DRF errors are often arrays for fields
+                        const firstErrorKey = Object.keys(errorData).find(key => 
+                            errorData[key] && (typeof errorData[key] === 'string' || (Array.isArray(errorData[key]) && typeof errorData[key][0] === 'string'))
+                        );
+
+                        if (firstErrorKey) {
                             const fieldError = Array.isArray(errorData[firstErrorKey]) ? errorData[firstErrorKey][0] : errorData[firstErrorKey];
                             errorMessage = `${firstErrorKey}: ${fieldError}`;
+                        } else {
+                            // This is the complex object case
+                            const errorString = JSON.stringify(errorData, null, 2);
+                            const isMobile = window.innerWidth < 1024;
+                            const desktopInstructions = (
+                                <div className="text-left">
+                                    <p className="font-bold mb-2">Возникла системная ошибка. Содержимое ошибки уже скопировано.</p>
+                                    <p className="mb-2">Пожалуйста, напишите сообщение сотруднику Центрального Аппарата:</p>
+                                    <ol className="list-decimal list-inside space-y-1">
+                                        <li>Перейдите в личное сообщение с сотрудником.</li>
+                                        <li>Чтобы вставить код, нажмите правую кнопку мыши и выберите «Вставить» или нажмите на клавиатуре Ctrl+V.</li>
+                                        <li>Отправьте сообщение.</li>
+                                    </ol>
+                                    <p className="mt-2">Сотрудник ЦА поможет решить проблему.</p>
+                                </div>
+                            );
+                            const mobileInstructions = (
+                                 <div className="text-left">
+                                    <p className="font-bold mb-2">Возникла системная ошибка. Содержимое ошибки уже скопировано.</p>
+                                    <p className="mb-2">Пожалуйста, напишите сообщение сотруднику Центрального Аппарата:</p>
+                                    <ol className="list-decimal list-inside space-y-1">
+                                        <li>Перейдите в личное сообщение с сотрудником.</li>
+                                        <li>Нажмите и удерживайте палец на поле ввода.</li>
+                                        <li>В появившемся меню выберите «Вставить».</li>
+                                        <li>Отправьте сообщение.</li>
+                                    </ol>
+                                    <p className="mt-2">Сотрудник ЦА поможет решить проблему.</p>
+                                </div>
+                            );
+
+                            try {
+                                await navigator.clipboard.writeText(errorString);
+                                errorMessage = isMobile ? mobileInstructions : desktopInstructions;
+                            } catch (err) {
+                                console.error('Не удалось скопировать ошибку в буфер обмена:', err);
+                                errorMessage = 'Возникла системная ошибка. Пожалуйста, обратитесь за помощью к сотруднику Центрального Аппарата. Код ошибки см. в консоли разработчика.';
+                                console.log("Код ошибки для копирования:", errorString);
+                            }
                         }
                     }
                 } else if (typeof errorData === 'string') {
                     errorMessage = errorData;
                 }
+                
                 setNotification({ message: errorMessage, type: 'error' });
-                return; // Stop further execution on error
+                return;
             }
 
             const successData = await response.json();
@@ -855,12 +916,12 @@ const RegistrationPage: React.FC = () => {
                 console.error('Failed to save submission status to local storage', error);
             }
             
-            setNotification({ message: 'Отчёт успешно отправлен и сохранен!', type: 'success' });
+            setNotification({ message: 'Анкета успешно отправлена и сохранена!', type: 'success' });
 
         } catch (error) {
             console.error('Сетевая ошибка при отправке формы:', error);
             setNotification({ message: 'Не удалось подключиться к серверу. Проверьте ваше интернет-соединение или попробуйте позже.', type: 'error' });
-        }    
+        }
     };
     
     const handleClearForm = useCallback(() => {
@@ -911,6 +972,7 @@ const RegistrationPage: React.FC = () => {
                     <RadioGroup label="Пол" name="gender" options={['Мужчина', 'Женщина']} selected={formData.gender} onChange={handleFieldChange} />
                     <DateInput label="Дата рождения" name="birthDate" value={formData.birthDate} onChange={handleFieldChange} onBlur={handleFieldBlur} error={touched.birthDate ? errors.birthDate : undefined} required />
                     <SearchableSelect label="Ваш регион" name="region" options={REGIONS} selected={formData.region} onChange={handleFieldChange} onBlur={handleFieldBlur} error={touched.region ? errors.region : undefined} required />
+                    <TextInput label="Профессия / род занятий" name="occupation" value={formData.occupation} onChange={handleFieldChange} onBlur={handleFieldBlur} error={touched.occupation ? errors.occupation : undefined} required />
                 </div>
             );
             case 1: return (
@@ -935,7 +997,7 @@ const RegistrationPage: React.FC = () => {
             case 2:
                 return (
                     <>
-                        {formData.education.length === 0 && <EmptyStatePlaceholder imageUrl="images/registration_form/sokol_ldpr_1.webp" />}
+                        {formData.education.length === 0 && <EmptyStatePlaceholder imageUrl="images/sokol_ldpr_1.webp" />}
                         <div className="space-y-4 mb-4">
                             {formData.education.map((edu, index) => <EducationItem key={index} index={index} item={edu} onChange={handleEducationChange} onRemove={removeEducation} onBlur={handleEducationItemBlur} errors={errors} touched={touched} />)}
                         </div>
@@ -947,7 +1009,7 @@ const RegistrationPage: React.FC = () => {
                 const selectedRussian = formData.russianFederationLanguages.map(l => l.name).filter(Boolean);
                 return (
                     <div className="space-y-8">
-                        {formData.foreignLanguages.length === 0 && formData.russianFederationLanguages.length === 0 && <EmptyStatePlaceholder imageUrl="images/registration_form/sokol_ldpr_2.webp" />}
+                        {formData.foreignLanguages.length === 0 && formData.russianFederationLanguages.length === 0 && <EmptyStatePlaceholder imageUrl="images/sokol_ldpr_2.webp" />}
                         <div>
                             <label className="block text-base font-semibold text-gray-800 mb-4">Владение иностранными языками</label>
                             {formData.foreignLanguages.length > 0 && (
@@ -978,7 +1040,7 @@ const RegistrationPage: React.FC = () => {
             case 4:
                 return (
                     <>
-                        {formData.workExperience.length === 0 && <EmptyStatePlaceholder imageUrl="images/registration_form/sokol_ldpr_3.webp" />}
+                        {formData.workExperience.length === 0 && <EmptyStatePlaceholder imageUrl="images/sokol_ldpr_3.webp" />}
                         <div className="space-y-4 mb-4">
                             {formData.workExperience.map((work, index) => <WorkItem key={index} index={index} item={work} onChange={handleWorkExperienceChange} onRemove={removeWorkExperience} onBlur={handleWorkItemBlur} errors={errors} touched={touched} />)}
                         </div>
@@ -1087,11 +1149,11 @@ const RegistrationPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-white lg:bg-gray-50 flex flex-col font-sans lg:h-screen lg:overflow-hidden">
             {notification && (
-                <div className={`fixed top-5 right-5 z-50 p-4 rounded-lg shadow-xl flex items-center text-white ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`} role="alert">
+                <div className={`fixed top-5 left-1/2 -translate-x-1/2 w-11/12 max-w-md sm:w-auto sm:left-auto sm:right-5 sm:-translate-x-0 z-50 p-4 rounded-lg shadow-xl flex items-start text-white ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`} role="alert">
                     {notification.type === 'error' 
-                        ? <AlertTriangle className="h-6 w-6 mr-3 shrink-0" /> 
+                        ? <AlertTriangle className="h-6 w-6 mr-3 shrink-0 mt-0.5" /> 
                         : <Check className="h-6 w-6 mr-3 shrink-0" />}
-                    <p className="font-semibold flex-grow">{notification.message}</p>
+                    <div className="font-semibold flex-grow">{notification.message}</div>
                     <button onClick={() => setNotification(null)} className="ml-4 p-1 rounded-full hover:bg-black/20" aria-label="Закрыть уведомление">
                         <X className="h-5 w-5" />
                     </button>
@@ -1160,7 +1222,7 @@ const RegistrationPage: React.FC = () => {
                 <main className="flex-1 flex flex-col lg:bg-white lg:rounded-2xl lg:shadow-2xl lg:h-full lg:overflow-hidden">
                     <div className="lg:hidden px-4 sm:px-8 pt-6 pb-4 flex justify-between items-center bg-white sticky top-0 z-10 border-b border-gray-100">
                         <div>
-                            <h1 className="text-xl font-bold text-slate-800">Анкета депутата</h1>
+                            <h1 className="text-xl font-bold text-slate-800">Анкета депутата ЛДПР</h1>
                         </div>
                         <button
                             onClick={() => setIsClearConfirmOpen(true)}

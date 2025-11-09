@@ -79,6 +79,7 @@ export const initialFormData: FormData = {
     gender: 'Мужчина',
     birthDate: '',
     region: '',
+    occupation: '',
     phone: '',
     email: '',
     vkPage: '',
@@ -125,4 +126,4 @@ export const initialFormData: FormData = {
     talents: '',
     knowledgeToShare: '',
     superpower: '',
-};;
+};

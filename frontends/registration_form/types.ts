@@ -6,6 +6,7 @@ export interface OtherLink {
 export interface Education {
     level: string;
     organization: string;
+    specialty?: string;
     hasPostgraduate: string; // 'Да' | 'Нет'
     postgraduateType?: string;
     postgraduateOrganization?: string;
@@ -43,6 +44,7 @@ export interface FormData {
     gender: string;
     birthDate: string;
     region: string;
+    occupation: string;
     
     // Contact Info
     phone: string;
