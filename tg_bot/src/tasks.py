@@ -1,13 +1,14 @@
 import asyncio
+import json
 import logging
 from datetime import datetime
 from typing import Dict, Any
 
-from aiogram import Bot
+from aiogram import Bot, types
 from asgiref.sync import async_to_sync
 
 from src.celery_app import app
-from src.config import BOT_TOKEN, CHAT_ID
+from src.config import BOT_TOKEN, CHAT_ID, INFO_LOG_CHAT_ID, ERROR_LOG_CHAT_ID
 from src.services.user import create_user
 from src.database import get_db_sync
 
@@ -80,3 +81,38 @@ def send_message(user_id: int, message: str):
             'message': str(e),
             'timestamp': datetime.now().isoformat()
         }
+
+
+@app.task()
+def send_log_to_telegram(log_data):
+    async def __send_log_to_telegram():
+        async with get_bot() as bot:
+            chat_id = INFO_LOG_CHAT_ID
+            if log_data['level'] == 'ERROR' and ERROR_LOG_CHAT_ID:
+                chat_id = ERROR_LOG_CHAT_ID
+            if not chat_id:
+                logger.warning(f"Cannot send log to Telegram: no chat id defined")
+                return
+            json_data = json.dumps(log_data, indent=2, ensure_ascii=False)
+
+            # Создаем временный файл в памяти
+            file = types.BufferedInputFile(
+                json_data.encode('utf-8'),
+                filename=f"log{chat_id}.json"
+            )
+            await bot.send_document(chat_id=chat_id, document=file, caption=f"""
+{log_data['log_id']}
+[{log_data['level']}]""")
+
+    try:
+        logger.info("Logging to Telegram")
+        asyncio.run(__send_log_to_telegram())
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        result = loop.run_until_complete(__send_log_to_telegram())
+        logger.info(f"End sending log to Telegram")
+    except Exception as e:
+        logger.error(log_data)
+        logger.error(e)
+

@@ -28,8 +28,8 @@ services:
   backend_auth:
     build: ./backend_auth
     container_name: backend_auth
-#    ports:
-#      - "8000:8000"
+    ports:
+      - "8000:8000"
     environment:
       REDIS_URL: "redis://redis:6379/0"
       SECRET_KEY: ${DJANGO_SECRET_KEY}
@@ -79,6 +79,8 @@ services:
       BASE_URL: ${BASE_URL}
       BOT_TOKEN: ${TELEGRAM_API_TOKEN}
       CHAT_ID: ${TELEGRAM_CHAT_ID}
+      ERROR_LOG_CHAT_ID: ${TELEGRAM_ERROR_LOG_CHAT_ID}
+      INFO_LOG_CHAT_ID: ${TELEGRAM_INFO_LOG_CHAT_ID}
 
       DATABASE_ENGINE: ${DATABASE_ENGINE}
       DATABASE_NAME: ${DATABASE_TG_NAME}
@@ -106,6 +108,8 @@ services:
       BASE_URL: ${BASE_URL}
       BOT_TOKEN: ${TELEGRAM_API_TOKEN}
       CHAT_ID: ${TELEGRAM_CHAT_ID}
+      ERROR_LOG_CHAT_ID: ${TELEGRAM_ERROR_LOG_CHAT_ID}
+      INFO_LOG_CHAT_ID: ${TELEGRAM_INFO_LOG_CHAT_ID}
 
       DATABASE_ENGINE: ${DATABASE_ENGINE}
       DATABASE_NAME: ${DATABASE_TG_NAME}

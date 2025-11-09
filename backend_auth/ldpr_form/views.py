@@ -34,22 +34,25 @@ class RegistrationFormViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def create(self, request, *args, **kwargs):
         user_serializer = UserCreationSerializer(data=request.data)
-        if not user_serializer.is_valid():
-            logger.error(f"Validation user errors: {user_serializer.errors}")
-            return Response(
-                {'errors': user_serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        user_serializer.is_valid(raise_exception=True)
+            # user_serializer.
+            # logger.error(f"Validation user errors: {user_serializer.errors}")
+            # return Response(
+            #     {'errors': user_serializer.errors},
+            #     status=status.HTTP_400_BAD_REQUEST
+            # )
         user_serializer.save()
 
         form_data = request.data.copy()
         serializer = self.get_serializer(data=form_data)
-        if not serializer.is_valid():
-            logger.error(f"Validation form errors: {serializer.errors}")
-            return Response(
-                {'errors': serializer.errors},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer.is_valid(raise_exception=True)
+        # if not serializer.is_valid():
+        #     serializer.raise_exception()
+        #     logger.error(f"Validation form errors: {serializer.errors}")
+            # return Response(
+            #     {'errors': serializer.errors},
+            #     status=status.HTTP_400_BAD_REQUEST
+            # )
 
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
@@ -71,16 +74,17 @@ class ProcessFormViewSet(viewsets.ViewSet):
     @action(detail=False, methods=['post'])
     def process_form(self, request):
         serializer = ProcessFormSerializer(data=request.data)
-        if not serializer.is_valid():
-            return Response(
-                {
-                    'status': 'error',
-                    'message': 'Ошибка валидации',
-                    'errors': serializer.errors,
-                    'input_data': request.data
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        serializer.is_valid(raise_exception=True)
+        # if not serializer.is_valid():
+        #     return Response(
+        #         {
+        #             'status': 'error',
+        #             'message': 'Ошибка валидации',
+        #             'errors': serializer.errors,
+        #             'input_data': request.data
+        #         },
+        #         status=status.HTTP_400_BAD_REQUEST
+        #     )
         data = serializer.validated_data
         user_id = data['user_id']
         status_value = data['status']

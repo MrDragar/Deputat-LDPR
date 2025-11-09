@@ -14,6 +14,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from web.logging.handlers import CeleryJSONHandler
+
 
 def get_secret(key, default):
     if os.path.isfile(f"/run/secrets/{key}"):
@@ -37,7 +39,6 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "1223")
 
 DEBUG = os.environ.get("DEBUG", default="True").lower() == "true"
 
-# LOGLEVEL = os.environ.get('LOGLEVEL', 'info').upper()
 
 LOGGING = {
     "version": 1,
@@ -57,6 +58,11 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "formatter": "simple"
         },
+        'celery_json': {
+            '()': CeleryJSONHandler,
+            'level': 'INFO',
+            'service_name': 'my_django_app',
+        },
     },
     "root": {
         "handlers": ["console"],
@@ -68,12 +74,21 @@ LOGGING = {
             "level": "INFO",
             "propagate": False,
         },
-        "django.request":
-            {
-                "handlers": ["console"],
-                "level": "DEBUG",
-                "propagate": False
-            }
+        "django.request": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": False
+        },
+        'request_logger': {
+            'handlers': ['celery_json'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'error_logger': {
+            'handlers': ['celery_json', 'console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
     },
 }
 
@@ -108,6 +123,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'web.logging.middleware.RequestResponseLoggingMiddleware'
 ]
 
 ROOT_URLCONF = 'web.urls'

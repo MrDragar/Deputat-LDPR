@@ -3,6 +3,8 @@ import os
 CHAT_ID = os.getenv("CHAT_ID")
 BASE_URL = os.getenv("BASE_URL")
 BOT_TOKEN = os.getenv('BOT_TOKEN')
+ERROR_LOG_CHAT_ID = os.getenv("ERROR_LOG_CHAT_ID", "")
+INFO_LOG_CHAT_ID = os.getenv("INFO_LOG_CHAT_ID", "")
 REDIS_URL = os.getenv('REDIS_URL', 'redis://redis:6379/0')
 
 DATABASE_ENGINE = os.getenv("DATABASE_ENGINE")
