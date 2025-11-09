@@ -17,8 +17,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: celery_redis
-    ports:
-      - "6379:6379"
+#    ports:
+#      - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -28,8 +28,8 @@ services:
   backend_auth:
     build: ./backend_auth
     container_name: backend_auth
-    ports:
-      - "8000:8000"
+#    ports:
+#      - "8000:8000"
     environment:
       REDIS_URL: "redis://redis:6379/0"
       SECRET_KEY: ${DJANGO_SECRET_KEY}
