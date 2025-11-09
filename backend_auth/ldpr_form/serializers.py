@@ -71,7 +71,7 @@ class EducationSerializer(serializers.ModelSerializer):
             'id', 'level', 'organization', 'has_postgraduate',
             'postgraduate_type',
             'postgraduate_organization', 'has_degree', 'degree_type',
-            'has_title', 'title_type'
+            'has_title', 'title_type', 'specialty'
         ]
 
     def validate(self, data):
@@ -284,6 +284,7 @@ class RegistrationFormListSerializer(serializers.ModelSerializer):
             'last_name',
             'first_name',
             'middle_name',
+            'occupation',
             'gender',
             'birth_date',
             'region',

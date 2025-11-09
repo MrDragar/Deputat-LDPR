@@ -110,7 +110,7 @@ class RegistrationForm(models.Model):
     gender = models.CharField(max_length=10, choices=constants.GENDER_CHOICES, verbose_name="Пол")
     birth_date = models.DateField(verbose_name="Дата рождения")
     region = models.CharField(max_length=1023, choices=constants.make_choices_from_list(constants.REGIONS), verbose_name="Регион")
-
+    occupation = models.CharField(max_length=1023, blank=True, verbose_name="Профессия / род занятий", default="-")
     # Контактная информация (Section 1)
     phone = models.CharField(max_length=20, verbose_name="Телефон")
     email = models.EmailField(verbose_name="Адрес электронной почты")
@@ -195,6 +195,7 @@ class Education(models.Model):
     form = models.ForeignKey(RegistrationForm, on_delete=models.CASCADE, related_name='education', verbose_name="Анкета")
     level = models.CharField(max_length=100, choices=constants.make_choices_from_list(constants.EDUCATION_LEVELS), verbose_name="Уровень образования")
     organization = models.CharField(max_length=1023, verbose_name="Название образовательной организации")
+    specialty = models.CharField(max_length=1023, verbose_name="Специальность", blank=True, default="-")
 
     has_postgraduate = models.CharField(max_length=3, choices=constants.HAS_CHOICES, default='Нет', verbose_name="Послевузовское профессиональное образование")
     postgraduate_type = models.CharField(max_length=100, blank=True, choices=constants.make_choices_from_list(constants.POSTGRADUATE_TYPES), verbose_name="Вид послевузовского образования") # <-- blank=True
