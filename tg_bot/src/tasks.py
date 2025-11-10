@@ -102,7 +102,8 @@ def send_log_to_telegram(log_data):
             )
             await bot.send_document(chat_id=chat_id, document=file, caption=f"""
 {log_data['log_id']}
-[{log_data['level']}]""")
+[{log_data['level']}]
+{log_data['message']}""")
 
     try:
         logger.info("Logging to Telegram")

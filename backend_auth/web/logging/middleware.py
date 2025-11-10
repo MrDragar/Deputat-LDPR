@@ -42,6 +42,8 @@ class RequestResponseLoggingMiddleware(MiddlewareMixin):
             duration = time.time() - start_time
 
             # Определяем уровень логирования на основе статус кода
+            if response.status_code == 404:
+                return response
             if 200 <= response.status_code < 400:
                 # Успешные запросы (2xx, 3xx) - INFO
                 self.log_request(request, response, duration, request_id,

@@ -3,6 +3,7 @@ import logging
 from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from django.db import transaction
 
@@ -12,7 +13,7 @@ from .serializers import RegistrationFormSerializer, UserCreationSerializer, \
 from .services import process_form, UserIsActiveError, NotifyError
 from .permissions import IsAdminOrCoordinator
 
-logger = logging.getLogger(__name__)
+regFormCreationLogger = logging.getLogger("regFormCreationLogger")
 
 
 class RegistrationFormViewSet(viewsets.ModelViewSet):
@@ -33,30 +34,22 @@ class RegistrationFormViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
-        user_serializer = UserCreationSerializer(data=request.data)
-        user_serializer.is_valid(raise_exception=True)
-            # user_serializer.
-            # logger.error(f"Validation user errors: {user_serializer.errors}")
-            # return Response(
-            #     {'errors': user_serializer.errors},
-            #     status=status.HTTP_400_BAD_REQUEST
-            # )
-        user_serializer.save()
+        user_serializer = UserCreationSerializer(data=request.data.copy())
+        serializer = self.get_serializer(data=request.data.copy())
+        try:
+            user_serializer.is_valid(raise_exception=True)
+            user_serializer.save()
 
-        form_data = request.data.copy()
-        serializer = self.get_serializer(data=form_data)
-        serializer.is_valid(raise_exception=True)
-        # if not serializer.is_valid():
-        #     serializer.raise_exception()
-        #     logger.error(f"Validation form errors: {serializer.errors}")
-            # return Response(
-            #     {'errors': serializer.errors},
-            #     status=status.HTTP_400_BAD_REQUEST
-            # )
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
 
-        self.perform_create(serializer)
+        except Exception as e:
+            regFormCreationLogger.error(f"Error creating form by {request.data.get('middle_name')} {request.data.get('first_name')} {request.data.get('last_name')}:\n{e} ", extra={"request": request})
+            raise
         headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        regFormCreationLogger.info(f"Created form by {serializer.data['middle_name']} {serializer.data['first_name']} {serializer.data['last_name']}", extra={"request": request, 'saved_data': serializer.data})
+        return Response(serializer.data, status=status.HTTP_201_CREATED,
+                        headers=headers)
 
     def get_permissions(self):
         if self.action == 'create':
@@ -124,7 +117,7 @@ class ProcessFormViewSet(viewsets.ViewSet):
                 status=status.HTTP_400_BAD_REQUEST if status_value else status.HTTP_200_OK
             )
         except Exception as e:
-            logger.error(f"Error processing user status: {e}")
+            logging.error(f"Error processing user status: {e}")
             return Response(
                 {
                     'status': 'error',

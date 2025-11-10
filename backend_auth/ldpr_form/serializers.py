@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework import serializers
 from users.models import (
     RegistrationForm, OtherLink, Education, WorkExperience,

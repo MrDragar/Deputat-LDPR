@@ -89,6 +89,11 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': False,
         },
+        'regFormCreationLogger': {
+            'handlers': ['celery_json'],
+            'level': 'INFO',
+            'propagate': False
+        }
     },
 }
 
@@ -123,7 +128,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'web.logging.middleware.RequestResponseLoggingMiddleware'
+    # 'web.logging.middleware.RequestResponseLoggingMiddleware'
 ]
 
 ROOT_URLCONF = 'web.urls'
