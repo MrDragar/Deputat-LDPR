@@ -107,10 +107,6 @@ def send_log_to_telegram(log_data):
     try:
         logger.info("Logging to Telegram")
         asyncio.run(__send_log_to_telegram())
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
-        result = loop.run_until_complete(__send_log_to_telegram())
         logger.info(f"End sending log to Telegram")
     except Exception as e:
         logger.error(log_data)
