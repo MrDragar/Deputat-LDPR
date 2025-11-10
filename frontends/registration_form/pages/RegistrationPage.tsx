@@ -1,7 +1,5 @@
-
-// FIX: Corrected the import for React hooks. The original import was syntactically incorrect, causing widespread "Cannot find name" errors.
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Plus, Trash2, X, Check, ArrowLeft, ArrowRight, User, Phone, GraduationCap, Languages, Briefcase, Heart, Flag, Users, ClipboardList, Palette, MessageCircle, FilePlus2, AlertTriangle } from 'lucide-react';
+import { Plus, Trash2, X, Check, ArrowLeft, ArrowRight, User, Phone, GraduationCap, Languages, Briefcase, Heart, Flag, Users, ClipboardList, Palette, MessageCircle, FilePlus2, AlertTriangle, RotateCcw } from 'lucide-react';
 import { initialFormData } from '../constants';
 import type { FormData, Education, WorkExperience, SocialOrganization, OtherLink, Language } from '../types';
 import TextInput from '../components/TextInput';
@@ -111,7 +109,7 @@ const EducationItem = React.memo(({ item, index, onChange, onRemove, onBlur, err
     const handleRemove = useCallback(() => onRemove(index), [index, onRemove]);
     
     return (
-         <div className="p-4 border rounded-lg bg-gray-50 relative">
+         <div className="p-4 border border-slate-200 rounded-lg bg-slate-50 relative">
             <button type="button" onClick={handleRemove} className="absolute top-3 right-3 p-1 text-red-500 hover:bg-red-100 rounded-full transition">
                 <Trash2 className="h-5 w-5" />
             </button>
@@ -212,7 +210,7 @@ const WorkItem = React.memo(({ item, index, onChange, onRemove, onBlur, errors, 
     const handleRemove = useCallback(() => onRemove(index), [index, onRemove]);
     
     return (
-         <div className="p-4 border rounded-lg bg-gray-50 relative">
+         <div className="p-4 border border-slate-200 rounded-lg bg-slate-50 relative">
             <button type="button" onClick={handleRemove} className="absolute top-3 right-3 p-1 text-red-500 hover:bg-red-100 rounded-full transition">
                 <Trash2 className="h-5 w-5" />
             </button>
@@ -238,7 +236,7 @@ const LanguageItem = React.memo(({ item, index, onChange, onRemove, onBlur, lang
     const handleRemove = useCallback(() => onRemove(index), [index, onRemove]);
 
     return (
-        <div className="p-4 border rounded-lg bg-gray-50 relative">
+        <div className="p-4 border border-slate-200 rounded-lg bg-slate-50 relative">
             <button type="button" onClick={handleRemove} className="absolute top-3 right-3 p-1 text-red-500 hover:bg-red-100 rounded-full transition">
                 <Trash2 className="h-5 w-5" />
             </button>
@@ -263,7 +261,7 @@ const SocialOrgItem = React.memo(({ item, index, onChange, onRemove, onBlur, err
     const handleRemove = useCallback(() => onRemove(index), [index, onRemove]);
     
     return (
-        <div className="p-4 border rounded-lg bg-gray-50 relative">
+        <div className="p-4 border border-slate-200 rounded-lg bg-slate-50 relative">
             <button type="button" onClick={handleRemove} className="absolute top-3 right-3 p-1 text-red-500 hover:bg-red-100 rounded-full transition">
                 <Trash2 className="h-5 w-5" />
             </button>
@@ -307,12 +305,42 @@ const RegistrationPage: React.FC = () => {
         }
     });
     const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
     const contentRef = useRef<HTMLDivElement>(null);
-    const mobileStepperRef = useRef<HTMLUListElement>(null);
+    const mobileStepperRef = useRef<HTMLDivElement>(null);
+    const stepRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    const desktopStepRefs = useRef<(HTMLLIElement | null)[]>([]);
     const isFormValid = completedSteps.every(s => s);
 
     const formDataRef = useRef(formData);
+    const appContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const checkIsMobile = () => setIsMobile(window.innerWidth < 1024);
+        window.addEventListener('resize', checkIsMobile);
+        return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
+
+    useEffect(() => {
+        if (isSubmitted) return ;
+        const appContainer = appContainerRef.current;
+        if (!appContainer) return;
+
+        const setAppHeight = () => {
+            appContainer.style.height = `${window.innerHeight}px`;
+        };
+
+        setAppHeight();
+
+        // Use 'resize' event listener to avoid ResizeObserver loop errors.
+        window.addEventListener('resize', setAppHeight);
+
+        return () => {
+            window.removeEventListener('resize', setAppHeight);
+        };
+    }, [isSubmitted]);
+
     useEffect(() => {
         formDataRef.current = formData;
     }, [formData]);
@@ -348,6 +376,37 @@ const RegistrationPage: React.FC = () => {
     useEffect(() => {
         window.localStorage.setItem(FORM_COMPLETED_KEY, JSON.stringify(completedSteps));
     }, [completedSteps]);
+
+    useEffect(() => {
+        // Autoscroll mobile stepper
+        if (mobileStepperRef.current) {
+            const activeStepEl = stepRefs.current[currentStep];
+            if (activeStepEl) {
+                const stepperRect = mobileStepperRef.current.getBoundingClientRect();
+                const stepRect = activeStepEl.getBoundingClientRect();
+                
+                const scrollLeft = mobileStepperRef.current.scrollLeft;
+                const centerPos = stepRect.left + stepRect.width / 2 - stepperRect.left;
+                const targetScroll = scrollLeft + centerPos - stepperRect.width / 2;
+
+                mobileStepperRef.current.scrollTo({
+                    left: targetScroll,
+                    behavior: 'smooth',
+                });
+            }
+        }
+    }, [currentStep]);
+
+    useEffect(() => {
+        // Autoscroll desktop sidebar to active step
+        const activeStepEl = desktopStepRefs.current[currentStep];
+        if (activeStepEl) {
+            activeStepEl.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+            });
+        }
+    }, [currentStep]);
 
 
     const isStepComplete = useCallback((index: number, data: FormData): boolean => {
@@ -429,14 +488,6 @@ const RegistrationPage: React.FC = () => {
             return () => clearTimeout(timer);
         }
     }, [notification]);
-
-    useEffect(() => {
-        if (isSubmitted) return;
-        const activeStepElement = mobileStepperRef.current?.querySelector(`[data-step-index="${currentStep}"]`);
-        if (activeStepElement) {
-            activeStepElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-        }
-    }, [currentStep, isSubmitted]);
     
     const handleFieldChange = useCallback((field: keyof FormData, value: any) => {
         const newFormData = { ...formDataRef.current };
@@ -791,7 +842,10 @@ const RegistrationPage: React.FC = () => {
     };
     
     const handleStepClick = (index: number) => {
-        if (index < currentStep || completedSteps[index]) {
+        // A step is clickable if it's a past step, or the current step, 
+        // or if the one before it has been completed.
+        const isClickable = index <= currentStep || (index > 0 && completedSteps[index-1]);
+        if (isClickable) {
             setCurrentStep(index);
         }
     };
@@ -859,43 +913,7 @@ const RegistrationPage: React.FC = () => {
                             const fieldError = Array.isArray(errorData[firstErrorKey]) ? errorData[firstErrorKey][0] : errorData[firstErrorKey];
                             errorMessage = `${firstErrorKey}: ${fieldError}`;
                         } else {
-                            // This is the complex object case
-                            const errorString = JSON.stringify(errorData, null, 2);
-                            const isMobile = window.innerWidth < 1024;
-                            const desktopInstructions = (
-                                <div className="text-left">
-                                    <p className="font-bold mb-2">Возникла системная ошибка. Содержимое ошибки уже скопировано.</p>
-                                    <p className="mb-2">Пожалуйста, напишите сообщение сотруднику Центрального Аппарата:</p>
-                                    <ol className="list-decimal list-inside space-y-1">
-                                        <li>Перейдите в личное сообщение с сотрудником.</li>
-                                        <li>Чтобы вставить код, нажмите правую кнопку мыши и выберите «Вставить» или нажмите на клавиатуре Ctrl+V.</li>
-                                        <li>Отправьте сообщение.</li>
-                                    </ol>
-                                    <p className="mt-2">Сотрудник ЦА поможет решить проблему.</p>
-                                </div>
-                            );
-                            const mobileInstructions = (
-                                 <div className="text-left">
-                                    <p className="font-bold mb-2">Возникла системная ошибка. Содержимое ошибки уже скопировано.</p>
-                                    <p className="mb-2">Пожалуйста, напишите сообщение сотруднику Центрального Аппарата:</p>
-                                    <ol className="list-decimal list-inside space-y-1">
-                                        <li>Перейдите в личное сообщение с сотрудником.</li>
-                                        <li>Нажмите и удерживайте палец на поле ввода.</li>
-                                        <li>В появившемся меню выберите «Вставить».</li>
-                                        <li>Отправьте сообщение.</li>
-                                    </ol>
-                                    <p className="mt-2">Сотрудник ЦА поможет решить проблему.</p>
-                                </div>
-                            );
-
-                            try {
-                                await navigator.clipboard.writeText(errorString);
-                                errorMessage = isMobile ? mobileInstructions : desktopInstructions;
-                            } catch (err) {
-                                console.error('Не удалось скопировать ошибку в буфер обмена:', err);
-                                errorMessage = 'Возникла системная ошибка. Пожалуйста, обратитесь за помощью к сотруднику Центрального Аппарата. Код ошибки см. в консоли разработчика.';
-                                console.log("Код ошибки для копирования:", errorString);
-                            }
+                            errorMessage = 'Возникла ошибка с обработкой данных. Пожалуйста, обратитесь к сотруднику ЦА.';
                         }
                     }
                 } else if (typeof errorData === 'string') {
@@ -948,14 +966,18 @@ const RegistrationPage: React.FC = () => {
         try {
             window.localStorage.removeItem(FORM_SUBMITTED_KEY);
             setIsSubmitted(false);
-            setCurrentStep(0);
+
+            const resizeEvent = new CustomEvent('resize');
+            window.dispatchEvent(resizeEvent);
+
+            setNotification(null);
         } catch (e) {
             console.error('Failed to clear submission status from local storage', e);
         }
     }, []);
 
     const AddItemButton: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => (
-        <button type="button" onClick={onClick} className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
+        <button type="button" onClick={onClick} className="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 transition-colors duration-200">
             <Plus className="h-5 w-5" /> {children}
         </button>
     );
@@ -1146,8 +1168,10 @@ const RegistrationPage: React.FC = () => {
         return <SuccessPage onEdit={handleEditForm} />;
     }
 
+    const progressPercentage = (currentStep / (SECTIONS.length - 1)) * 100;
+
     return (
-        <div className="min-h-screen bg-white lg:bg-gray-50 flex flex-col font-sans lg:h-screen lg:overflow-hidden">
+        <div ref={appContainerRef} className="overflow-hidden bg-white lg:bg-gray-50 flex flex-col font-sans">
             {notification && (
                 <div className={`fixed top-5 left-1/2 -translate-x-1/2 w-11/12 max-w-md sm:w-auto sm:left-auto sm:right-5 sm:-translate-x-0 z-50 p-4 rounded-lg shadow-xl flex items-start text-white ${notification.type === 'success' ? 'bg-green-500' : 'bg-red-500'}`} role="alert">
                     {notification.type === 'error' 
@@ -1176,7 +1200,7 @@ const RegistrationPage: React.FC = () => {
                                 const StepIcon = STEP_ICONS[index];
 
                                 return (
-                                    <li key={section.title}>
+                                    <li key={section.title} ref={el => { desktopStepRefs.current[index] = el; }}>
                                         <button
                                             onClick={() => isReachable && setCurrentStep(index)}
                                             disabled={!isReachable}
@@ -1211,7 +1235,7 @@ const RegistrationPage: React.FC = () => {
                     <div className="px-8 py-4 mt-auto border-t border-slate-700">
                         <button
                             onClick={() => setIsClearConfirmOpen(true)}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-300 rounded-lg hover:bg-red-500/20 hover:text-red-200 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-800 focus:ring-red-500"
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-300 rounded-lg hover:bg-red-500/20 hover:text-red-200 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-800 focus-visible:ring-red-500"
                         >
                             <Trash2 className="h-4 w-4" />
                             Очистить форму
@@ -1219,64 +1243,83 @@ const RegistrationPage: React.FC = () => {
                     </div>
                 </aside>
                 
-                <main className="flex-1 flex flex-col lg:bg-white lg:rounded-2xl lg:shadow-2xl lg:h-full lg:overflow-hidden">
-                    <div className="lg:hidden px-4 sm:px-8 pt-6 pb-4 flex justify-between items-center bg-white sticky top-0 z-10 border-b border-gray-100">
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-800">Анкета депутата ЛДПР</h1>
-                        </div>
-                        <button
-                            onClick={() => setIsClearConfirmOpen(true)}
-                            className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-red-500 rounded-lg hover:bg-red-500/10 transition-colors"
-                            aria-label="Очистить форму"
-                        >
-                            <Trash2 className="h-4 w-4" />
-                            <span>Очистить</span>
-                        </button>
-                    </div>
-                    
-                    <div className="lg:hidden">
-                        <div className="overflow-x-auto py-4">
-                            <ul ref={mobileStepperRef} className="flex items-center whitespace-nowrap px-4 sm:px-8">
-                                {SECTIONS.map((section, index) => {
-                                    const isCompleted = completedSteps[index];
-                                    const isActive = index === currentStep;
-                                    const isReachable = index === 0 || completedSteps[index - 1] || index <= currentStep;
-                                    const isPastAndIncomplete = !isCompleted && !isActive && index < currentStep;
-                                    const StepIcon = STEP_ICONS[index];
-
-                                    return (
-                                        <li key={section.title} data-step-index={index} className="flex items-center">
-                                            <button
-                                                onClick={() => isReachable && setCurrentStep(index)}
-                                                disabled={!isReachable}
-                                                className={`h-12 w-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 border-2 transition-all duration-300 ${
-                                                    isActive 
-                                                        ? 'bg-blue-600 border-blue-500 text-white scale-110' 
-                                                        : isPastAndIncomplete
-                                                        ? 'bg-red-500 border-red-400 text-white'
-                                                        : isCompleted 
-                                                        ? 'bg-green-500 border-green-400 text-white' 
-                                                        : 'bg-gray-200 border-gray-300 text-gray-500'
-                                                } ${!isReachable ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                aria-label={`Шаг ${index + 1}: ${section.title}`}
-                                                aria-current={isActive ? 'step' : undefined}
-                                            >
-                                                 {isPastAndIncomplete ? <AlertTriangle className="h-6 w-6" /> : <StepIcon className="h-6 w-6" />}
-                                            </button>
-                                            {index < SECTIONS.length - 1 && (
-                                                <div className={`h-1 w-10 mx-4 rounded transition-colors duration-300 ${isCompleted ? 'bg-green-500' : 'bg-gray-300'}`}></div>
-                                            )}
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </div>
-                    </div>
-                
+                <main className="flex-1 flex flex-col lg:bg-white lg:rounded-2xl lg:shadow-2xl lg:overflow-hidden">
                     <div ref={contentRef} className="mobile-scrollbar-hide flex-grow overflow-y-auto px-4 sm:px-8 lg:p-8 lg:pr-4 h-0" style={{ scrollbarGutter: 'stable' }}>
-                         <div className="mt-6 mb-8 lg:mt-0">
-                          <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">{SECTIONS[currentStep].title}</h2>
-                          <p className="text-slate-500 mt-2">Раздел {currentStep + 1} из {SECTIONS.length}</p>
+                        {currentStep === 0 && (
+                            <div className="lg:hidden pt-6 pb-6 flex justify-between items-center">
+                                <h1 className="text-2xl font-bold text-slate-800">Анкета депутата ЛДПР</h1>
+                                <button
+                                    onClick={() => setIsClearConfirmOpen(true)}
+                                    className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-gray-100 text-gray-500 rounded-full hover:bg-red-600 hover:text-white transition-colors"
+                                    aria-label="Очистить форму"
+                                >
+                                    <Trash2 className="h-5 w-5" />
+                                </button>
+                            </div>
+                        )}
+                        
+                        <div className={`mb-8 lg:mt-0 ${currentStep === 0 ? 'mt-0 lg:mt-6' : 'pt-6 lg:pt-0'}`}>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-slate-800">{SECTIONS[currentStep].title}</h2>
+                            <p className="text-slate-500 mt-2">Раздел {currentStep + 1} из {SECTIONS.length}</p>
+                        </div>
+
+                        <div className="lg:hidden mb-8">
+                            <div ref={mobileStepperRef} className="overflow-x-auto mobile-scrollbar-hide pb-3 -mx-4 sm:-mx-8">
+                                <div className="flex items-center w-max px-4 sm:px-8">
+                                    {SECTIONS.map((_, index) => {
+                                        const isActive = index === currentStep;
+                                        const isCompleted = completedSteps[index];
+                                        const isPastAndIncomplete = !isCompleted && !isActive && index < currentStep;
+                                        const isClickable = index <= currentStep || (index > 0 && completedSteps[index-1]);
+
+                                        const StepIcon = STEP_ICONS[index];
+
+                                        return (
+                                            <React.Fragment key={index}>
+                                                <button
+                                                    ref={el => { stepRefs.current[index] = el; }}
+                                                    onClick={() => handleStepClick(index)}
+                                                    disabled={!isClickable}
+                                                    className={`flex flex-col items-center shrink-0 ${!isClickable ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                    aria-current={isActive ? 'step' : undefined}
+                                                >
+                                                    <div
+                                                        className={`h-12 w-12 rounded-full flex items-center justify-center border-2 transition-all duration-300
+                                                            ${isActive
+                                                                ? 'bg-blue-600 text-white border-transparent shadow-lg'
+                                                                : isPastAndIncomplete
+                                                                ? 'bg-red-500 text-white border-transparent'
+                                                                : isCompleted
+                                                                ? 'bg-green-500 text-white border-transparent'
+                                                                : 'bg-slate-100 text-slate-400 border-transparent'
+                                                            }
+                                                        `}
+                                                    >
+                                                        <StepIcon className="h-6 w-6" />
+                                                    </div>
+                                                </button>
+                                                {index < SECTIONS.length - 1 && (
+                                                    <div className={`h-1.5 rounded-full w-8 mx-2 transition-colors duration-300 ${
+                                                        completedSteps[index] 
+                                                            ? 'bg-green-500' 
+                                                            : index < currentStep 
+                                                            ? 'bg-red-500' 
+                                                            : 'bg-slate-200'
+                                                    }`}></div>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <div className="mt-4">
+                                <div className="bg-slate-200 rounded-full h-2 w-full">
+                                    <div
+                                        className="bg-blue-600 h-2 rounded-full transition-all duration-500 ease-in-out"
+                                        style={{ width: `${progressPercentage}%` }}
+                                    ></div>
+                                </div>
+                            </div>
                         </div>
                         
                         <form onSubmit={(e) => e.preventDefault()} noValidate className="pb-24 lg:pb-0">
@@ -1287,7 +1330,7 @@ const RegistrationPage: React.FC = () => {
                     <div className="hidden lg:flex mt-auto pt-6 border-t border-slate-200 justify-between items-center shrink-0 px-4 sm:px-8 pb-4 sm:pb-8">
                         <div>
                             {currentStep > 0 && (
-                                <button type="button" onClick={handleBack} className="px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-sm bg-white text-slate-700 border border-slate-300 hover:bg-slate-50">
+                                <button type="button" onClick={handleBack} className="px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-sm bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">
                                     <ArrowLeft className="h-5 w-5" />
                                     Назад
                                 </button>
@@ -1295,12 +1338,12 @@ const RegistrationPage: React.FC = () => {
                         </div>
                         <div>
                             {currentStep < SECTIONS.length - 1 ? (
-                                <button type="button" onClick={handleNext} className="px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                                <button type="button" onClick={handleNext} className="px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md bg-blue-600 text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">
                                     Вперед
                                     <ArrowRight className="h-5 w-5" />
                                 </button>
                             ) : (
-                                <button type="button" onClick={handleSubmit} disabled={!isFormValid} className={`px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md bg-green-600 text-white focus:outline-none focus:ring-4 focus:ring-green-300 ${!isFormValid ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'}`}>
+                                <button type="button" onClick={handleSubmit} disabled={!isFormValid} className={`px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md bg-green-600 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 ${!isFormValid ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'}`}>
                                     Завершить и отправить
                                     <Check className="h-5 w-5" />
                                 </button>
@@ -1311,35 +1354,25 @@ const RegistrationPage: React.FC = () => {
             </div>
              <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 flex gap-4 justify-between items-center shadow-top z-10">
                  {currentStep > 0 ? (
-                    <button type="button" onClick={handleBack} className="px-4 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 flex-1">
+                    <button type="button" onClick={handleBack} className="px-4 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">
                         <ArrowLeft className="h-5 w-5" />
                         <span>Назад</span>
                     </button>
                 ) : <div className="flex-1"></div>}
                 
                 {currentStep < SECTIONS.length - 1 ? (
-                    <button type="button" onClick={handleNext} className="px-4 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 flex-1">
+                    <button type="button" onClick={handleNext} className="px-4 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-md bg-blue-600 text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 flex-1">
                         <span>Вперед</span>
                         <ArrowRight className="h-5 w-5" />
                     </button>
                 ) : (
-                    <button type="button" onClick={handleSubmit} disabled={!isFormValid} className={`px-4 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-md bg-green-600 text-white focus:outline-none focus:ring-4 focus:ring-green-300 flex-1 ${!isFormValid ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'}`}>
+                    <button type="button" onClick={handleSubmit} disabled={!isFormValid} className={`px-4 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-md bg-green-600 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 flex-1 ${!isFormValid ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'}`}>
                         <span>Завершить</span>
                         <Check className="h-5 w-5" />
                     </button>
                 )}
             </div>
-            <div className="hidden lg:block">
-                <ConfirmationModal
-                    isOpen={isClearConfirmOpen}
-                    onClose={() => setIsClearConfirmOpen(false)}
-                    onConfirm={handleClearForm}
-                    title="Очистить форму?"
-                >
-                    <p>Вы уверены, что хотите полностью очистить анкету? Все введенные данные будут безвозвратно удалены. Это действие нельзя отменить.</p>
-                </ConfirmationModal>
-            </div>
-            <div className="lg:hidden">
+             {isMobile ? (
                 <BottomSheet
                     isOpen={isClearConfirmOpen}
                     onClose={() => setIsClearConfirmOpen(false)}
@@ -1348,7 +1381,16 @@ const RegistrationPage: React.FC = () => {
                 >
                     <p>Вы уверены, что хотите полностью очистить анкету? Все введенные данные будут безвозвратно удалены. Это действие нельзя отменить.</p>
                 </BottomSheet>
-            </div>
+            ) : (
+                <ConfirmationModal
+                    isOpen={isClearConfirmOpen}
+                    onClose={() => setIsClearConfirmOpen(false)}
+                    onConfirm={handleClearForm}
+                    title="Очистить форму?"
+                >
+                    <p>Вы уверены, что хотите полностью очистить анкету? Все введенные данные будут безвозвратно удалены. Это действие нельзя отменить.</p>
+                </ConfirmationModal>
+            )}
         </div>
     );
 };

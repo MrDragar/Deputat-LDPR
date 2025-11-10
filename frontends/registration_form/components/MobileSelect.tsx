@@ -32,9 +32,9 @@ const MobileSelect: React.FC<MobileSelectProps> = ({ isOpen, onClose, options, s
             setSearchTerm('');
             setTimeout(() => {
                 listRef.current?.scrollTo(0, 0);
-                if (isSearchable) {
-                    inputRef.current?.focus();
-                }
+                // if (isSearchable) {
+                //     inputRef.current?.focus();
+                // }
             }, 100); // Allow time for transition
         } else {
             document.body.style.overflow = '';
@@ -51,7 +51,7 @@ const MobileSelect: React.FC<MobileSelectProps> = ({ isOpen, onClose, options, s
 
     return (
         <div
-            className={`fixed inset-0 z-50 flex flex-col bg-white transition-transform duration-300 ease-in-out ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
+            className={`fixed inset-0 z-50 flex flex-col bg-white transition-transform duration-300 ease-in-out font-sans ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
             role="dialog"
             aria-modal="true"
             aria-labelledby="mobile-select-title"
@@ -62,7 +62,7 @@ const MobileSelect: React.FC<MobileSelectProps> = ({ isOpen, onClose, options, s
                 </h2>
                 <button
                     onClick={onClose}
-                    className="p-2 text-gray-500 rounded-full hover:bg-gray-100 hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    className="p-2 text-gray-500 rounded-full hover:bg-gray-100 hover:text-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500"
                     aria-label="Закрыть"
                 >
                     <X className="h-6 w-6" />
@@ -77,7 +77,7 @@ const MobileSelect: React.FC<MobileSelectProps> = ({ isOpen, onClose, options, s
                             ref={inputRef}
                             type="text"
                             placeholder="Поиск..."
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out text-base"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:border-blue-500 transition duration-150 ease-in-out text-base"
                             value={searchTerm}
                             onChange={e => setSearchTerm(e.target.value)}
                         />

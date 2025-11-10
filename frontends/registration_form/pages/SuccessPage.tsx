@@ -17,7 +17,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({ onEdit }) => {
 
         <div className="my-8">
           <img
-            src="/images/sokol_ldpr_4.webp"
+            src="images/sokol_ldpr_4.webp"
             alt="ЛДПР"
             className="max-w-sm w-full mx-auto rounded-lg"
           />
@@ -35,7 +35,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({ onEdit }) => {
 
         <button
           onClick={onEdit}
-          className="mt-10 px-8 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 w-full sm:w-auto mx-auto"
+          className="mt-10 px-8 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-md bg-blue-600 text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 w-full sm:w-auto mx-auto"
         >
           <Edit className="h-5 w-5" />
           Внести изменения

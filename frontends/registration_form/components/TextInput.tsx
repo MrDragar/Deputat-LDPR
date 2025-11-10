@@ -33,12 +33,22 @@ const TextInput: React.FC<TextInputProps> = ({ label, name, id, error, required,
     }, [name, onBlur]);
 
     const inputClasses = `
-        w-full px-4 py-3 border rounded-md shadow-sm bg-white
+        w-full px-4 py-3 border rounded-md bg-white
         text-gray-900 placeholder-gray-400 
-        focus:outline-none focus:ring-2
-        ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}
+        focus-visible:outline-none focus-visible:ring-2
+        ${error ? 'border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500' : 'border-gray-300 focus-visible:ring-blue-500 focus-visible:border-blue-500'}
         transition duration-150 ease-in-out text-base
     `;
+
+    const commonProps = {
+        id: id || name,
+        name,
+        value: value ?? '',
+        required,
+        onChange: handleChange,
+        onBlur: handleBlur,
+        ...props,
+    };
 
     return (
         <div>
@@ -49,24 +59,14 @@ const TextInput: React.FC<TextInputProps> = ({ label, name, id, error, required,
             )}
             {type === 'textarea' ? (
                 <textarea
-                    id={id || name}
-                    name={name}
+                    {...commonProps}
                     className={`${inputClasses} min-h-[100px]`}
-                    value={value}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    {...props as React.TextareaHTMLAttributes<HTMLTextAreaElement>}
                 />
             ) : (
                 <input
-                    id={id || name}
-                    name={name}
+                    {...commonProps}
                     type={type}
                     className={inputClasses}
-                    value={value}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    {...props as React.InputHTMLAttributes<HTMLInputElement>}
                 />
             )}
             {error && <p className="mt-2 text-sm text-red-600">{error}</p>}

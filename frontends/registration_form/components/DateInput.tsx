@@ -33,10 +33,10 @@ const DateInput: React.FC<DateInputProps> = ({ label, name, id, error, required,
     }, [name, onBlur]);
 
     const inputClasses = `
-        w-full px-4 py-3 border rounded-md shadow-sm bg-white
+        w-full px-4 py-3 border rounded-md bg-white
         text-gray-900 placeholder-gray-400
-        focus:outline-none focus:ring-2
-        ${error ? 'border-red-500 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}
+        focus-visible:outline-none focus-visible:ring-2
+        ${error ? 'border-red-500 focus-visible:ring-red-500 focus-visible:border-red-500' : 'border-gray-300 focus-visible:ring-blue-500 focus-visible:border-blue-500'}
         transition duration-150 ease-in-out text-base
     `;
 

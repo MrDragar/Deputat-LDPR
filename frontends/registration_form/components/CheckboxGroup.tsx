@@ -90,7 +90,7 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
                                    ${isDisabled
                                         ? 'border-gray-300 bg-gray-100'
                                         : `border-gray-400 checked:bg-blue-600 checked:border-transparent 
-                                           focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`
+                                           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500`
                                     }`}
                         style={!isDisabled ? { backgroundImage: `url("${checkmarkSvg}")`, backgroundPosition: 'center', backgroundRepeat: 'no-repeat', backgroundSize: '100%' } : {}}
                     />
@@ -138,7 +138,7 @@ const CheckboxGroup: React.FC<CheckboxGroupProps> = ({
                         type="button"
                         onClick={handleAddCustom}
                         disabled={!customValue.trim()}
-                        className="px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-sm bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        className="px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-sm bg-blue-600 text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
                     >
                         Добавить
                     </button>
