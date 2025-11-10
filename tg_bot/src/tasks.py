@@ -100,10 +100,13 @@ def send_log_to_telegram(log_data):
                 json_data.encode('utf-8'),
                 filename=f"log{chat_id}.json"
             )
+            message = log_data['message']
+            if len(message) > 2000:
+                message = message[:2000]
             await bot.send_document(chat_id=chat_id, document=file, caption=f"""
 {log_data['log_id']}
 [{log_data['level']}]
-{log_data['message']}""")
+{message}""")
 
     try:
         logger.info("Logging to Telegram")
