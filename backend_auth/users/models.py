@@ -220,7 +220,7 @@ class WorkExperience(models.Model):
     form = models.ForeignKey(RegistrationForm, on_delete=models.CASCADE, related_name='work_experience', verbose_name="Анкета")
     organization = models.CharField(max_length=1023, verbose_name="Название организации")
     position = models.CharField(max_length=1023, verbose_name="Должность")
-    start_date = models.CharField(max_length=50, verbose_name="Месяц и год начала работы") # Format "01.2020" as per frontend
+    start_date = models.CharField(max_length=1023, verbose_name="Месяц и год начала работы") # Format "01.2020" as per frontend
 
     class Meta:
         verbose_name = "Место работы"

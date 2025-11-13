@@ -107,7 +107,7 @@ class WorkExperienceSerializer(serializers.ModelSerializer):
     position = serializers.CharField(max_length=1023, required=True,
                                      error_messages={
                                          'required': 'Это поле обязательно для заполнения'})
-    start_date = serializers.CharField(max_length=50, required=True,
+    start_date = serializers.CharField(max_length=1023, required=True,
                                        error_messages={
                                            'required': 'Это поле обязательно для заполнения',
                                            'invalid': 'Неверный формат даты. Ожидается ММ.ГГГГ'})
