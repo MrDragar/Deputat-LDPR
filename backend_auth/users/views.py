@@ -15,12 +15,13 @@ class UserListAPIView(APIView):
 
     def get(self, request):
         users = User.objects.prefetch_related(
-            Prefetch('deputy_form__education'),
-            Prefetch('deputy_form__work_experience'),
-            Prefetch('deputy_form__foreign_languages'),
-            Prefetch('deputy_form__russian_federation_languages'),
-            Prefetch('deputy_form__social_organizations'),
-            Prefetch('deputy_form__other_links')
+            Prefetch('deputy_form')
+            # Prefetch('deputy_form__education'),
+            # Prefetch('deputy_form__work_experience'),
+            # Prefetch('deputy_form__foreign_languages'),
+            # Prefetch('deputy_form__russian_federation_languages'),
+            # Prefetch('deputy_form__social_organizations'),
+            # Prefetch('deputy_form__other_links')
         ).all()
 
         serializer = UserSerializer(users, many=True)
