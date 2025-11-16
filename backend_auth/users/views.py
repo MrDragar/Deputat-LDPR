@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from django.db.models import Prefetch
 from users.models import User
-from ldpr_form.permissions import IsAdmin, IsAuthenticated
+from ldpr_form.permissions import IsAdmin, IsAuthenticated, IsAdminOrCoordinator
 from .serializers import UserSerializer, UserListSerializer
 
 
@@ -11,7 +11,7 @@ class UserListAPIView(APIView):
     """
     API View для получения списка пользователей с анкетами.
     """
-    permission_classes = [IsAdmin]
+    permission_classes = [IsAdminOrCoordinator]
 
     def get(self, request):
         users = User.objects.filter(is_active=True)
