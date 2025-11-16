@@ -71,8 +71,14 @@ class UserSerializer(serializers.ModelSerializer):
         ]
 
 
+class ShortRegistrationFormSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RegistrationForm
+        fields = '__all__'
+
+
 class UserListSerializer(serializers.ModelSerializer):
-    deputy_form = RegistrationFormSerializer(read_only=True)
+    deputy_form = ShortRegistrationFormSerializer(read_only=True)
 
     class Meta:
         model = User

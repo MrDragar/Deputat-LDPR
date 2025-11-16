@@ -16,7 +16,7 @@ class UserListAPIView(APIView):
     def get(self, request):
         users = User.objects.all()
 
-        serializer = UserSerializer(users, many=True)
+        serializer = UserListSerializer(users, many=True)
         return Response(serializer.data)
 
 
@@ -43,7 +43,7 @@ class UserDetailAPIView(APIView):
                 'deputy_form__other_links'
             ).get(user_id=user_id)
 
-            serializer = UserListSerializer(user)
+            serializer = UserSerializer(user)
             return Response(serializer.data)
 
         except User.DoesNotExist:
