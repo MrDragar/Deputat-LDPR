@@ -4,7 +4,7 @@ from rest_framework import status
 from django.db.models import Prefetch
 from users.models import User
 from ldpr_form.permissions import IsAdmin, IsAuthenticated
-from .serializers import UserSerializer
+from .serializers import UserSerializer, UserListSerializer
 
 
 class UserListAPIView(APIView):
@@ -14,15 +14,7 @@ class UserListAPIView(APIView):
     permission_classes = [IsAdmin]
 
     def get(self, request):
-        users = User.objects.prefetch_related(
-            Prefetch('deputy_form')
-            # Prefetch('deputy_form__education'),
-            # Prefetch('deputy_form__work_experience'),
-            # Prefetch('deputy_form__foreign_languages'),
-            # Prefetch('deputy_form__russian_federation_languages'),
-            # Prefetch('deputy_form__social_organizations'),
-            # Prefetch('deputy_form__other_links')
-        ).all()
+        users = User.objects.all()
 
         serializer = UserSerializer(users, many=True)
         return Response(serializer.data)
@@ -51,7 +43,7 @@ class UserDetailAPIView(APIView):
                 'deputy_form__other_links'
             ).get(user_id=user_id)
 
-            serializer = UserSerializer(user)
+            serializer = UserListSerializer(user)
             return Response(serializer.data)
 
         except User.DoesNotExist:

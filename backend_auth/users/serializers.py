@@ -69,3 +69,20 @@ class UserSerializer(serializers.ModelSerializer):
             'last_login',
             'deputy_form'
         ]
+
+
+class UserListSerializer(serializers.ModelSerializer):
+    deputy_form = RegistrationFormSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            'user_id',
+            'login',
+            'is_active',
+            'role',
+            'date_joined',
+            'last_login',
+            'deputy_form'
+        ]
+        depth = 1
