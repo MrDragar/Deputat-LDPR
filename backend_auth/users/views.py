@@ -27,7 +27,7 @@ class UserDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
-        if user_id != request.user.user_id and request.user.role != "admin":
+        if user_id != request.user.user_id and request.user.role not in ["admin", "coordinator"]:
             self.permission_denied(
                 request,
                 message=getattr("Недостаточно прав", 'message', None),
