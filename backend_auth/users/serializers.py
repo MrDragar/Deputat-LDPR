@@ -74,7 +74,15 @@ class UserSerializer(serializers.ModelSerializer):
 class ShortRegistrationFormSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistrationForm
-        fields = '__all__'
+        fields = [
+            'last_name',
+            'first_name',
+            'middle_name',
+            'region',
+            'gender',
+            'representative_body_level',
+            'party_role'
+        ]
 
 
 class UserListSerializer(serializers.ModelSerializer):
