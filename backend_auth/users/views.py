@@ -1,10 +1,10 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.db.models import Prefetch
 from users.models import User
 from ldpr_form.permissions import IsAdmin, IsAuthenticated, IsAdminOrCoordinator
 from .serializers import UserSerializer, UserListSerializer
+from .services import get_user_list
 
 
 class UserListAPIView(APIView):
@@ -14,8 +14,7 @@ class UserListAPIView(APIView):
     permission_classes = [IsAdminOrCoordinator]
 
     def get(self, request):
-        users = User.objects.filter(is_active=True)
-
+        users = get_user_list(auth_user=request.user)
         serializer = UserListSerializer(users, many=True)
         return Response(serializer.data)
 
