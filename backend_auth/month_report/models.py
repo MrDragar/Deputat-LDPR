@@ -1,5 +1,7 @@
 from django.db import models
 
+from ldpr_form.constants import REPRESENTATIVE_BODY_LEVELS, \
+    make_choices_from_list
 from users.models import User
 
 
@@ -22,7 +24,7 @@ class Report(models.Model):
         "letter": "Письмо"
     }
     # id = models.IntegerField(primary_key=True, verbose_name="Номер поля", auto_created=True, blank=True)
-    report_period = models.ForeignKey(ReportPeriod, on_delete=models.CASCADE, related_name="vdpg_reports")
+    report_period = models.ForeignKey(ReportPeriod, on_delete=models.CASCADE, related_name="reports")
     start_date = models.DateField(verbose_name="Дата начала", null=True, blank=True)
     end_date = models.DateField(verbose_name="Дата конца", null=True, blank=True)
     name = models.CharField(max_length=100, null=True, blank=True, verbose_name="Название поля")
@@ -40,17 +42,12 @@ class RegionReport(models.Model):
 
 
 class DeputyRecord(models.Model):
-    LEVELS = {
-        "MCU": "Депутаты муниципальных образований",
-        "ACR": "Депутаты административных центров регионов",
-        "ZS": "Депутаты Законодательных собраний регионов"
-    }
     # id = models.IntegerField(primary_key=True, auto_created=True, blank=True)
     deputy = models.ForeignKey(User, on_delete=models.CASCADE, related_name="period_records", null=True, blank=True)
     region_report = models.ForeignKey(RegionReport, on_delete=models.CASCADE, related_name="deputies_records")
     fio = models.CharField(max_length=100, verbose_name="ФИО")
     is_available = models.BooleanField(default=True, verbose_name="Статус активности")
-    level = models.CharField(choices=LEVELS, null=False)
+    level = models.CharField(choices=make_choices_from_list(REPRESENTATIVE_BODY_LEVELS), null=False)
     reason = models.CharField(max_length=1000, verbose_name="Причина невзаимодействия", null=True, blank=True)
 
     class Meta:
@@ -62,7 +59,7 @@ class ReportRecord(models.Model):
     # id = models.IntegerField(primary_key=True, auto_created=True, blank=True)
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name="records")
     deputy_record = models.ForeignKey(DeputyRecord, on_delete=models.CASCADE, related_name="report_records")
-    link = models.URLField(null=False, verbose_name="Ссылка")
+    link = models.URLField(null=True, verbose_name="Ссылка")
 
     class Meta:
         verbose_name = "Отчёт депутата"

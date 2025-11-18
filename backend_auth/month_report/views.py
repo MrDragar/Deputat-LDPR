@@ -10,10 +10,16 @@ from .serializers import (
     ReportRecordSerializer
 )
 
+from .services import init_report_period
+
 
 class ReportPeriodViewSet(viewsets.ModelViewSet):
     queryset = ReportPeriod.objects.all()
     serializer_class = ReportPeriodSerializer
+
+    def perform_create(self, serializer):
+        instance: ReportPeriod = serializer.save()
+        init_report_period(instance)
 
 
 class ReportViewSet(viewsets.ModelViewSet):
