@@ -29,6 +29,7 @@ class Report(models.Model):
     start_date = models.DateField(verbose_name="Дата начала", null=True, blank=True)
     end_date = models.DateField(verbose_name="Дата конца", null=True, blank=True)
     name = models.CharField(max_length=100, null=True, blank=True, verbose_name="Название поля")
+    description = models.TextField(null=True, blank=True, verbose_name="Описание")
     theme = models.CharField(choices=THEMES)
 
     class Meta:
