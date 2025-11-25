@@ -21,6 +21,7 @@ class Report(models.Model):
         "vdpg": "ВДПГ",
         "event": "Мероприятие",
         "reg_event": "Мероприятие в рег. парламенте",
+        "opt_event": "Опциональное мероприятие",
         "letter": "Письмо"
     }
     # id = models.IntegerField(primary_key=True, verbose_name="Номер поля", auto_created=True, blank=True)

@@ -3,9 +3,49 @@ from ldpr_form import constants
 from users.models import User
 
 
+def init_report_records(report: Report, deputy_record: DeputyRecord):
+    if report.theme == 'event':
+        report_record = ReportRecord.objects.create(
+            deputy_record=deputy_record, report=report)
+        report_record = ReportRecord.objects.create(
+            deputy_record=deputy_record, report=report)
+        if deputy_record.level == 'ЗС':
+            report_record = ReportRecord.objects.create(
+                deputy_record=deputy_record, report=report)
+        return
+    if report.theme == 'opt_event':
+        report_record = ReportRecord.objects.create(
+            deputy_record=deputy_record, report=report)
+        report_record = ReportRecord.objects.create(
+            deputy_record=deputy_record, report=report)
+        report_record = ReportRecord.objects.create(
+            deputy_record=deputy_record, report=report)
+        report_record = ReportRecord.objects.create(
+            deputy_record=deputy_record, report=report)
+        report_record = ReportRecord.objects.create(
+            deputy_record=deputy_record, report=report)
+        report_record = ReportRecord.objects.create(
+            deputy_record=deputy_record, report=report)
+        if deputy_record.level != 'ЗС':
+            report_record = ReportRecord.objects.create(
+                deputy_record=deputy_record, report=report)
+            report_record = ReportRecord.objects.create(
+                deputy_record=deputy_record, report=report)
+    if report.theme == 'reg_event' and deputy_record.level != 'ЗС':
+        return
+    report_record = ReportRecord.objects.create(
+        deputy_record=deputy_record, report=report)
+
+
+def init_report(report: Report):
+    for region_report in report.report_period.region_reports.all():
+        for deputy_record in region_report.deputies_records.all():
+            init_report_records(report, deputy_record)
+
+
 def init_deputy_record(deputy_record: DeputyRecord):
     for report in deputy_record.region_report.report_period.reports.all():
-        report_record = ReportRecord.objects.create(deputy_record=deputy_record, report=report)
+        init_report_records(report, deputy_record)
 
 
 def init_region_report(region_report: RegionReport):
@@ -20,7 +60,6 @@ def init_region_report(region_report: RegionReport):
             deputy=user, region_report=region_report, fio=fio,
             is_available=True, level=user.deputy_form.representative_body_level
         )
-        init_deputy_record(deputy_record)
 
 
 def init_report_period(report_period: ReportPeriod):
