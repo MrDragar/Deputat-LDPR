@@ -22,7 +22,7 @@ class InvitingError(Exception):
 
 
 def process_form(user_id: int, status: bool, reason: str):
-    user = User.objects.get(user_id=user_id)
+    user: User = User.objects.get(user_id=user_id)
     if user.is_active:
         raise UserIsActiveError()
 
@@ -44,7 +44,8 @@ def process_form(user_id: int, status: bool, reason: str):
                   "Причина отклонения анкеты: \n\n" \
                   f"{reason}"
         user.delete()
-
+    if user.id < 0:
+        return
     result = celery_app.send_task("src.tasks.send_message",
                                   args=(user_id, message)).get()
     logger.info(result)
