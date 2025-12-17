@@ -44,7 +44,7 @@ def process_form(user_id: int, status: bool, reason: str):
                   "Причина отклонения анкеты: \n\n" \
                   f"{reason}"
         user.delete()
-    if user.id < 0:
+    if user.id < 100:
         return
     result = celery_app.send_task("src.tasks.send_message",
                                   args=(user_id, message)).get()
