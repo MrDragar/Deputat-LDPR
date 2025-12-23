@@ -1,5 +1,6 @@
 import os
 import uuid
+from pathlib import Path
 
 from fastapi import FastAPI, Request, APIRouter
 from fastapi.staticfiles import StaticFiles
@@ -10,9 +11,10 @@ from src.model import InputData
 
 
 app = FastAPI()
+BASE_DIR = Path(__file__).resolve().parent
+MEDIA_DIR = BASE_DIR / "media"
 router = APIRouter(prefix='/api/reports')
-router.mount("/media", StaticFiles(directory="media"), name="media")
-
+router.mount("/media", StaticFiles(directory=str(MEDIA_DIR)), name="media")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
