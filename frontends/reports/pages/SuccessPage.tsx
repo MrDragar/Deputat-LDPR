@@ -132,10 +132,10 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         <div className="space-y-4">
           <button
             onClick={onEdit}
-            className="w-full sm:w-auto px-8 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-md border border-blue-600 text-blue-600 hover:bg-blue-50"
+            className="w-full sm:w-auto px-8 py-3 mx-auto text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-md border border-blue-600 text-blue-600 hover:bg-blue-50"
           >
             <Edit className="h-5 w-5" />
-            Заполнить новый отчёт
+            Вернуться к редактированию отчёта
           </button>
         </div>
 
