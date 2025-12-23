@@ -56,7 +56,7 @@ class CitizenRequests(BaseModel):
     responses: str
     official_queries: str
     examples: List[Example]
-    total_requests: str
+    citizen_day_receptions: Dict[str, int]
 
 class SVOSupportProject(BaseModel):
     name: Optional[str] = None  # Может быть пустым, как в JSON
@@ -82,7 +82,6 @@ class LDPRReport(BaseModel):
     project_activity: List[ProjectActivity]
     ldpr_orders: List[LDPROrders]
     other_info: Optional[str] = None  # Добавлено, так как присутствует в JSON
-    citizen_day_receptions: Dict[str, int]
 
 
 class InputData(BaseModel):
