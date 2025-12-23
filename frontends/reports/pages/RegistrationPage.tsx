@@ -1290,47 +1290,19 @@ const RegistrationPage: React.FC = () => {
                                     Вперед <ArrowRight className="h-5 w-5" />
                                 </button>
                             ) : (
-                                 <button
-                                     type="button"
-                                     onClick={handleSubmit}
-                                     disabled={isSubmitting}
-                                     className={`
-px-6 py-3 text-base font-semibold rounded-lg 
-flex items-center gap-2 transition-all shadow-md 
-${isSubmitting 
-             ? 'bg-gray-400 cursor-not-allowed'
-             : 'bg-green-600 hover:bg-green-700'
-} 
-text-white focus-visible:outline-none 
-focus-visible:ring-2 focus-visible:ring-offset-2 
-focus-visible:ring-green-500
-`}
-                                 >
-                                     {isSubmitting ? (
-                                         <>
-                                             Формирую отчет...
-                                             <Loader2
-                                                 className="h-5 w-5 animate-spin"/>
-                                         </>
-                                     ) : (
-                                         <>
-                                             Сформировать отчет
-                                             <Check className="h-5 w-5"/>
-                                         </>
-                                     )}
-                                 </button>
-                             )}
+                                <button type="button" onClick={handleSubmit} disabled={isSubmitted} className="px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md bg-green-600 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 hover:bg-green-700">
+                                    {isSubmitted?"Формирую отчет...":"Сформировать отчет"} <Check className="h-5 w-5" />
+                                </button>
+                            )}
                         </div>
                     </div>
                 </main>
             </div>
 
             {/* Mobile Footer */}
-            <div
-                className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 flex gap-4 justify-between items-center shadow-top z-10">
+            <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 flex gap-4 justify-between items-center shadow-top z-10">
                 {currentStep > 0 ? (
-                    <button type="button" onClick={handleBack}
-                            className="px-4 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">
+                    <button type="button" onClick={handleBack} className="px-4 py-3 text-base font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 flex-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-500">
                         <ArrowLeft className="h-5 w-5" /> <span>Назад</span>
                     </button>
                 ) : <div className="flex-1"></div>}
