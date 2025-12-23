@@ -4,6 +4,8 @@ export default {
     "./index.html",
     "./components/**/*.{js,ts,jsx,tsx}", // Если есть папка components
     "./pages/**/*.{js,ts,jsx,tsx}",      // Если есть папка pages
+    "../reports/components/**/*.{js,ts,jsx,tsx}", // Если есть папка components
+    "../reports/components/**/*.{js,ts,jsx,tsx}",      // Если есть папка pages
   ],
   theme: {
     extend: {},
