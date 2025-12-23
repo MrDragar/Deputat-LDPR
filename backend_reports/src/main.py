@@ -11,7 +11,7 @@ from src.model import InputData
 
 
 app = FastAPI()
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 MEDIA_DIR = BASE_DIR / "media"
 router = APIRouter(prefix='/api/reports')
 router.mount("/media", StaticFiles(directory=str(MEDIA_DIR)), name="media")
