@@ -59,7 +59,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
 
         <div className="my-8">
           <img
-            src="images/sokol_ldpr_4.webp"
+            src="images/reposts/sokol_ldpr_4.webp"
             alt="ЛДПР"
             className="max-w-sm w-full mx-auto rounded-lg"
           />

@@ -33,6 +33,7 @@ async def create_pdf(input_data: InputData, request: Request):
     report_filename = f"report_{uuid.uuid4()}.pdf"
     report_filepath = os.path.join("media", report_filename)
     generate_pdf_report(input_data.data.dict(), report_filepath)
-    return {"status": "Success", "message": f"{request.base_url}media/{report_filename}"}
+    return {"status": "Success", "message": f"{request.base_url}/api/reports/media/{report_filename}".replace(
+        'https://', 'https://')}
 
 app.include_router(router)

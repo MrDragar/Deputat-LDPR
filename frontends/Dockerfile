@@ -60,8 +60,8 @@ FROM nginx:alpine
 COPY --from=builder_host /app/dist /usr/share/nginx/html
 COPY --from=builder_reports /app/dist /usr/share/nginx/html/reports/
 COPY --from=builder_registration_form /app/dist /usr/share/nginx/html/registration_form/
-
-RUN #mkdir -p  /usr/share/nginx/html/images/
+RUN mkdir -p  /usr/share/nginx/html/images/
+COPY --from=builder_reports /app/dist/images/reposts /usr/share/nginx/html/images/reposts
 #COPY --from=builder_registration_form /app/dist/images/registration_form /usr/share/nginx/html/images/registration_form
 COPY host/nginx.conf /etc/nginx/conf.d/default.conf
 
