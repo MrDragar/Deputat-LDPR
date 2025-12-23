@@ -17,6 +17,7 @@ import BottomSheet from '../components/BottomSheet';
 import SuccessPage from './SuccessPage';
 import MonthSelector from '../components/MonthSelector';
 import LinkInputList from '../components/LinkInputList';
+import { useRemoteData } from '../context/RemoteDataContext';
 import { validateField, validateLegislationItem, validateProjectItem, validateLdprOrder } from '../utils/validation';
 
 // Section definitions aligned with Report structure
@@ -151,8 +152,9 @@ const AddItemButton = ({ onClick, children }: { onClick: () => void, children?: 
 );
 
 const RegistrationPage: React.FC = () => {
-    // --- State ---
-    const [formData, setFormData] = useState<FormData>(() => {
+  const { userData, isStandalone, isLoading } = useRemoteData(); // Добавили isLoading
+  const [hasAutoFilled, setHasAutoFilled] = useState(false);
+  const [formData, setFormData] = useState<FormData>(() => {
         try {
             const saved = window.localStorage.getItem(FORM_DATA_KEY);
             return saved ? JSON.parse(saved) : initialFormData;
@@ -196,8 +198,87 @@ const RegistrationPage: React.FC = () => {
     const appContainerRef = useRef<HTMLDivElement>(null);
     const formDataRef = useRef(formData);
 
-    // --- Effects ---
+  useEffect(() => {
+    console.log('useRemoteData состояние:', { userData, isStandalone, isLoading });
+    
+    if (isLoading) {
+      console.log('Данные ещё загружаются...');
+      return;
+    }
+    
+    if (!userData?.deputyForm) {
+      console.log('Нет данных deputyForm для автозаполнения');
+      return;
+    }
 
+    // Защита от повторного автозаполнения
+    if (hasAutoFilled) {
+      console.log('Автозаполнение уже выполнено');
+      return;
+    }
+
+    const deputyForm = userData.deputyForm;
+    console.log('Начинаю автозаполнение из:', deputyForm);
+
+      setFormData(prev => {
+        const newData = { ...prev };
+        const general = newData.general_info;
+
+        // ФИО
+        if (!general.full_name && deputyForm.lastName && deputyForm.firstName && deputyForm.middleName) {
+          general.full_name = `${deputyForm.lastName} ${deputyForm.firstName} ${deputyForm.middleName}`;
+        }
+        if (!general.full_name && deputyForm.lastName && deputyForm.firstName && !deputyForm.middleName) {
+          general.full_name = `${deputyForm.lastName} ${deputyForm.firstName}`;
+        }
+
+        // Регион
+        if (!general.region && deputyForm.region) {
+          general.region = deputyForm.region;
+        }
+
+        // Уровень представительства (преобразуем из английского в русский)
+        if (!general.representative_level && deputyForm.representativeBodyLevel) {
+            general.representative_level = deputyForm.representativeBodyLevel
+        }
+
+        // Название представительного органа
+        if (!general.authority_name && deputyForm.representativeBodyName) {
+          general.authority_name = deputyForm.representativeBodyName;
+        }
+
+        // Должность
+        if (!general.position && deputyForm.representativeBodyPosition) {
+          general.position = deputyForm.representativeBodyPosition;
+        }
+
+        // Должность во фракции ЛДПР
+        if (!general.ldpr_position && deputyForm.partyPosition) {
+          general.ldpr_position = deputyForm.partyPosition;
+        }
+
+        if (!general.committees.length && deputyForm.committeeName) {
+          general.committees = [deputyForm.committeeName];
+        }
+        if (general.links.length === 0 || !general.links.length[0]) {
+          const links = [];
+          if (deputyForm.vkPage) links.push(deputyForm.vkPage);
+          if (deputyForm.vkGroup) links.push(deputyForm.vkGroup);
+          if (deputyForm.telegramChannel) links.push(deputyForm.telegramChannel);
+          if (deputyForm.personalSite) links.push(deputyForm.personalSite);
+          if (links.length > 0) {
+            general.links = links;
+          }
+        }
+
+        return newData;
+      });
+    setHasAutoFilled(true);
+    console.log('Автозаполнение завершено');
+    
+  }, [userData, isStandalone, isLoading, hasAutoFilled]);
+    
+    
     useEffect(() => {
         const checkIsMobile = () => setIsMobile(window.innerWidth < 1024);
         window.addEventListener('resize', checkIsMobile);
