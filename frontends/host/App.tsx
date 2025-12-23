@@ -17,7 +17,7 @@ import DeputiesListPage from './pages/deputies/DeputiesListPage';
 import DeputyProfilePage from './pages/deputies/DeputyProfilePage';
 import {User} from "@/types";
 import { api } from './services/api';
-
+import './index.css'  // Импорт Tailwind CSS
 const AutumnReport = React.lazy(() => import('reports/App'));
 
 const App: React.FC = () => {

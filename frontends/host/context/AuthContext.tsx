@@ -1,4 +1,3 @@
-// context/AuthContext.tsx
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
@@ -48,6 +47,35 @@ const validateToken = (token: string | null): { isValid: boolean; user: User | n
   }
 };
 
+// Новая функция для проверки и обновления токена
+const validateAndRefreshToken = async (): Promise<{ isValid: boolean; user: User | null }> => {
+  const token = localStorage.getItem('authToken');
+  
+  if (!token) return { isValid: false, user: null };
+
+  const { isValid, user } = validateToken(token);
+  
+  // Если токен валиден, возвращаем результат
+  if (isValid && user) {
+    return { isValid: true, user };
+  }
+  
+  // Если токен невалиден, пробуем обновить
+  console.log('Token invalid or expired, attempting to refresh...');
+  try {
+    const refreshed = await api.refreshToken();
+    if (refreshed) {
+      // После успешного обновления проверяем новый токен
+      const newToken = localStorage.getItem('authToken');
+      return validateToken(newToken);
+    }
+  } catch (error) {
+    console.error('Failed to refresh token:', error);
+  }
+  
+  return { isValid: false, user: null };
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [user, setUser] = useState<User | null>(null);
@@ -56,11 +84,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // ИНИЦИАЛИЗАЦИЯ ПРИ МОНТИРОВАНИИ
   useEffect(() => {
-    const initAuth = () => {
+    const initAuth = async () => {
       setIsLoading(true);
-      const token = localStorage.getItem('authToken');
       
-      const { isValid, user } = validateToken(token);
+      const { isValid, user } = await validateAndRefreshToken();
       
       if (isValid && user) {
         setIsAuthenticated(true);
@@ -68,9 +95,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setIsAuthenticated(false);
         setUser(null);
+        // Очищаем оба токена при неудачной инициализации
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('refreshToken');
       }
       
-      // Важно: setTimeout для гарантии отрисовки
       setTimeout(() => setIsLoading(false), 0);
     };
 
@@ -79,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     localStorage.removeItem('authToken');
+    localStorage.removeItem('refreshToken');
     setIsAuthenticated(false);
     setUser(null);
     navigate('/login');
@@ -88,6 +118,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const response = await api.login(username, password);
       localStorage.setItem('authToken', response.access);
+      
+      // Сохраняем refresh token
+      if (response.refresh) {
+        localStorage.setItem('refreshToken', response.refresh);
+      }
       
       const { isValid, user } = validateToken(response.access);
       
@@ -105,12 +140,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Проверка токена при каждом запросе API (опционально)
   useEffect(() => {
     const handleApiRequest = async () => {
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        const { isValid } = validateToken(token);
-        if (!isValid) {
-          logout();
-        }
+      const { isValid } = await validateAndRefreshToken();
+      if (!isValid) {
+        logout();
       }
     };
 
@@ -141,4 +173,4 @@ export const useAuth = (): AuthContextType => {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-};
+}

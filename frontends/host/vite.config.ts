@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [
           react(),
-              federation({
+          federation({
                 name: 'host-app',
                 remotes: {
                 reports: `/reports/assets/remoteEntry.js`,

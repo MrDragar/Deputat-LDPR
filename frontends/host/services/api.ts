@@ -16,9 +16,24 @@ import { ru } from 'date-fns/locale/ru';
 const BASE_URL = 'https://депутатлдпр.рф';
 const REPORT_API_URL = `${BASE_URL}/api/auth/mouth_reports`;
 
-
 const getAuthToken = (): string | null => {
   return localStorage.getItem('authToken');
+};
+
+const getRefreshToken = (): string | null => {
+  return localStorage.getItem('refreshToken');
+};
+
+const setTokens = (access: string, refresh?: string) => {
+  localStorage.setItem('authToken', access);
+  if (refresh) {
+    localStorage.setItem('refreshToken', refresh);
+  }
+};
+
+const clearTokens = () => {
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('refreshToken');
 };
 
 const getAuthHeaders = () => {
@@ -39,13 +54,46 @@ export class APIError extends Error {
   }
 }
 
+// Функция для обновления токена
+const refreshAuthToken = async (): Promise<boolean> => {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    console.log('No refresh token available');
+    return false;
+  }
+
+  try {
+    const response = await fetch(`${BASE_URL}/api/auth/refresh/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      setTokens(data.access, data.refresh);
+      console.log('Token refreshed successfully');
+      return true;
+    } else {
+      console.log('Token refresh failed:', response.status);
+      clearTokens();
+      return false;
+    }
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return false;
+  }
+};
+
 /**
  * Centralized handler for fetch API responses.
  * It checks for response.ok, parses JSON, and throws a standardized APIError on failure.
  * @param response The fetch Response object.
  * @returns The JSON data from the response.
  */
-const handleApiResponse = async (response: Response) => {
+const handleApiResponse = async (response: Response, retryCount = 0): Promise<any> => {
   if (response.ok) {
     // Handle 204 No Content response
     if (response.status === 204) {
@@ -61,6 +109,30 @@ const handleApiResponse = async (response: Response) => {
   }
 
   // Handle error responses, including expired tokens (401)
+  if (response.status === 401 && retryCount === 0) {
+    console.log('Token expired, attempting refresh...');
+    const refreshed = await refreshAuthToken();
+    
+    if (refreshed) {
+      // Retry the original request with new token
+      const originalUrl = response.url;
+      const originalOptions = await response.clone().json().catch(() => ({}));
+      
+      // Recreate the request with new token
+      const newHeaders = getAuthHeaders();
+      const retryResponse = await fetch(originalUrl, {
+        method: response.method,
+        headers: newHeaders,
+        body: response.method !== 'GET' && response.method !== 'HEAD' 
+          ? JSON.stringify(originalOptions) 
+          : undefined,
+      });
+      
+      return handleApiResponse(retryResponse, retryCount + 1);
+    }
+  }
+
+  // If still unauthorized after refresh or other error
   if (response.status === 401) {
     // The token is invalid or expired.
     // Dispatch a global event that the AuthProvider can listen for to trigger logout.
@@ -82,7 +154,7 @@ const handleApiResponse = async (response: Response) => {
 
 
 export const api = {
-  login: async (username: string, password: string): Promise<{ access: string }> => {
+  login: async (username: string, password: string): Promise<{ access: string; refresh: string }> => {
     const response = await fetch(`${BASE_URL}/api/auth/login/`, {
       method: 'POST',
       headers: {
@@ -92,14 +164,38 @@ export const api = {
     });
 
     const data = await handleApiResponse(response);
-    if (data && data.access) {
-      localStorage.setItem('authToken', data.access);
+    if (data && data.access && data.refresh) {
+      setTokens(data.access, data.refresh);
     }
     return data;
   },
 
   logout: (): void => {
-    localStorage.removeItem('authToken');
+    clearTokens();
+  },
+
+  verifyToken: async (): Promise<boolean> => {
+    const token = getAuthToken();
+    if (!token) return false;
+
+    try {
+      const response = await fetch(`${BASE_URL}/api/auth/verify/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ token }),
+      });
+
+      return response.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  refreshToken: async (): Promise<boolean> => {
+    return await refreshAuthToken();
   },
 
   getForms: async (): Promise<RegistrationForm[]> => {
