@@ -55,6 +55,18 @@ services:
       - app_network
     restart: unless-stopped
 
+  backend_reports:
+    build: ./backend_reports
+    container_name: backend_reports
+    command: uvicorn src.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
+    ports:
+      - "8002:8000"
+    restart: always
+    networks:
+      - app_network
+    volumes:
+      - ./reports_storage:/app/media
+
   db_tg:
     image: postgres:17
     environment:
