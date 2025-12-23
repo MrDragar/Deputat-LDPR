@@ -27,12 +27,13 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setCollapsed, isMobileOpen, setMobileOpen }) => {
   const { user, logout } = useAuth();
 
-  const navItems = [
-    { to: '/', text: 'Главная', icon: Home, roles: ['admin', 'coordinator', 'employee', 'deputy'] },
-    { to: '/autumn-report', text: 'Отчёт за осеннюю сессию', icon: Calendar, roles: ['admin', 'coordinator', 'employee', 'deputy'] },     { to: '/deputies', text: 'Наши депутаты', icon: Users, roles: ['admin', 'coordinator'] },
-    { to: '/applications', text: 'Заявки', icon: FileText, roles: ['admin'] },
-    { to: '/reports', text: 'Отчётность', icon: BarChart3, roles: ['admin', 'coordinator', 'employee'] },
-    { to: '/my-profile', text: 'Моя анкета', icon: UserIcon, roles: ['deputy', 'coordinator'] },
+ const navItems = [
+    { to: '/', text: 'Главная', icon: Home, roles: ['admin', 'coordinator', 'employee', 'deputy'], external: false },
+    { to: '/autumn-report', text: 'Отчёт за осеннюю сессию', icon: Calendar, roles: ['admin', 'coordinator', 'employee', 'deputy'], external: true },
+    { to: '/deputies', text: 'Наши депутаты', icon: Users, roles: ['admin', 'coordinator'], external: false },
+    { to: '/applications', text: 'Заявки', icon: FileText, roles: ['admin'], external: false },
+    { to: '/reports', text: 'Отчётность', icon: BarChart3, roles: ['admin', 'coordinator', 'employee'], external: false },
+    { to: '/my-profile', text: 'Моя анкета', icon: UserIcon, roles: ['deputy', 'coordinator'], external: false },
   ];
 
   const filteredNavItems = navItems.filter(item => user && item.roles.includes(user.role));
@@ -89,11 +90,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setCollapsed, isMobileOp
                 <li key={item.to}>
                   <NavLink
                     to={item.to}
+                    target={item.external?"_blank":""}
                     end
                     className={({ isActive }) => {
                         const baseClasses = 'flex items-center h-12 rounded-lg text-sm font-medium transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500';
-                        const activeClasses = isActive 
-                            ? 'bg-blue-600 text-white' 
+                        const activeClasses = isActive
+                            ? 'bg-blue-600 text-white'
                             : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900';
                         const layoutClasses = isCollapsed ? 'w-12 justify-center' : 'w-full px-4 gap-3';
                         return `${baseClasses} ${activeClasses} ${layoutClasses}`;
