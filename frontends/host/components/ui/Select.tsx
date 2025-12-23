@@ -1,38 +1,43 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import ReactDOM from 'react-dom';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import MobileSelect from './MobileSelect';
 
-interface SelectProps {
+interface SelectOption {
+    value: string;
     label: string;
-    name: string;
-    id?: string;
-    options: string[];
-    selected: string;
-    onChange: (name: string, value: string) => void;
-    required?: boolean;
-    error?: string;
-    onBlur?: (name: string) => void;
 }
 
-const Select: React.FC<SelectProps> = ({ label, name, id, options, selected, onChange, required, error, onBlur }) => {
+interface SelectProps {
+    label?: string;
+    name: string;
+    id?: string;
+    options: SelectOption[];
+    value: string;
+    onChange: (name: string, value: string) => void;
+    onBlur?: (name: string) => void;
+    error?: string;
+    required?: boolean;
+    icon?: React.ReactNode;
+}
+
+const Select: React.FC<SelectProps> = ({ label, name, id, options, value, onChange, onBlur, error, required, icon }) => {
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+    const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-    useEffect(() => {
-        const checkIsMobile = () => {
-            setIsMobile(window.innerWidth < 1024);
-        };
+    const selectedLabel = useMemo(() => {
+        return options.find(option => option.value === value)?.label || 'Выберите...';
+    }, [options, value]);
+
+     useEffect(() => {
+        const checkIsMobile = () => setIsMobile(window.innerWidth < 768);
         window.addEventListener('resize', checkIsMobile);
         return () => window.removeEventListener('resize', checkIsMobile);
     }, []);
 
     const handleBlur = useCallback(() => {
-        if (onBlur) {
-            onBlur(name);
-        }
+        if (onBlur) onBlur(name);
     }, [name, onBlur]);
 
     useEffect(() => {
@@ -53,35 +58,18 @@ const Select: React.FC<SelectProps> = ({ label, name, id, options, selected, onC
             }
         };
     }, [isOpen, handleBlur, wrapperRef, isMobile]);
-    
-    useEffect(() => {
-        if (isOpen && !isMobile && dropdownRef.current) {
-            const dropdownRect = dropdownRef.current.getBoundingClientRect();
-            // If dropdown bottom is below the viewport, scroll down to make it fully visible.
-            if (dropdownRect.bottom > window.innerHeight) {
-                dropdownRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            }
-        }
-    }, [isOpen, isMobile]);
 
-    const handleSelect = (option: string) => {
-        onChange(name, option);
+    const handleSelect = (optionValue: string) => {
+        onChange(name, optionValue);
         setIsOpen(false);
     };
-    
-    const handleToggle = () => {
-        if (isMobile) {
-            setIsOpen(true);
-            return;
-        }
 
+    const handleToggle = () => {
         const willBeOpen = !isOpen;
         setIsOpen(willBeOpen);
-        if (!willBeOpen) {
-            handleBlur();
-        }
+        if (!willBeOpen) handleBlur();
     };
-
+    
     const handleMobileClose = () => {
         setIsOpen(false);
         handleBlur();
@@ -91,71 +79,91 @@ const Select: React.FC<SelectProps> = ({ label, name, id, options, selected, onC
 
     if (isMobile && portalRoot) {
         return (
-            <>
-                <label htmlFor={id || name} className="block text-base font-semibold text-gray-800 mb-2">
-                    {label} {required && <span className="text-red-500">*</span>}
-                </label>
-                <button
-                    id={id || name}
-                    type="button"
-                    onClick={handleToggle}
-                    className={`w-full px-4 py-3 text-left bg-white border rounded-md shadow-sm flex justify-between items-center text-base
-                    focus:outline-none focus:ring-2 ${error ? 'border-red-500 ring-red-500' : 'border-gray-300 ring-blue-500 focus:border-blue-500'}`}
-                >
-                    <span className={selected ? 'text-gray-900' : 'text-gray-500'}>
-                        {selected || 'Выберите...'}
-                    </span>
-                    <ChevronDown className="h-5 w-5 text-gray-400" />
-                </button>
+             <div className="relative">
+                {label && (
+                  <label htmlFor={id || name} className="block text-base font-semibold text-gray-800 mb-2">
+                      {label} {required && <span className="text-red-500">*</span>}
+                  </label>
+                )}
+                <div className="relative">
+                  {icon && (
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                          {icon}
+                      </div>
+                  )}
+                  <button
+                      id={id || name}
+                      type="button"
+                      onClick={() => setIsOpen(true)}
+                      className={`w-full py-3 pr-4 text-left bg-white border rounded-md shadow-sm flex justify-between items-center text-base
+                      focus:outline-none focus:ring-2 ${error ? 'border-red-500 ring-red-500' : 'border-gray-300 ring-blue-500 focus:border-blue-500'} ${icon ? 'pl-12' : 'pl-4'}`}
+                  >
+                      <span className={value ? 'text-gray-900' : 'text-gray-500'}>
+                          {selectedLabel}
+                      </span>
+                      <ChevronDown className="h-5 w-5 text-gray-400" />
+                  </button>
+                </div>
+
                 {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-                {isOpen && ReactDOM.createPortal(
+                
+                {isOpen && createPortal(
                     <MobileSelect
                         isOpen={isOpen}
                         onClose={handleMobileClose}
                         options={options}
-                        selectedOption={selected}
+                        selectedValue={value}
                         onSelect={handleSelect}
-                        title={label}
+                        title={label || 'Выберите значение'}
                     />,
                     portalRoot
                 )}
-            </>
+            </div>
         );
     }
 
     return (
         <div ref={wrapperRef} className="relative">
-            <label htmlFor={id || name} className="block text-base font-semibold text-gray-800 mb-2">
-                {label} {required && <span className="text-red-500">*</span>}
-            </label>
-            <button
-                id={id || name}
-                type="button"
-                onClick={handleToggle}
-                className={`w-full px-4 py-3 text-left bg-white border rounded-md shadow-sm flex justify-between items-center text-base
-                focus:outline-none focus:ring-2 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
-            >
-                <span className={selected ? 'text-gray-900' : 'text-gray-500'}>
-                    {selected || 'Выберите...'}
-                </span>
-                <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
-            </button>
-            {isOpen && (
-                <div ref={dropdownRef} className="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto mt-1">
-                    <ul>
-                        {options.map(option => (
-                            <li
-                                key={option}
-                                onClick={() => handleSelect(option)}
-                                className={`px-4 py-2 cursor-pointer text-gray-900 ${selected === option ? 'bg-blue-600 text-white' : 'hover:bg-blue-100'}`}
-                            >
-                                {option}
-                            </li>
-                        ))}
-                    </ul>
-                </div>
+            {label && (
+              <label htmlFor={id || name} className="block text-base font-semibold text-gray-800 mb-2">
+                  {label} {required && <span className="text-red-500">*</span>}
+              </label>
             )}
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            <div className="relative">
+                 {icon && (
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                        {icon}
+                    </div>
+                )}
+                <button
+                    id={id || name}
+                    type="button"
+                    onClick={handleToggle}
+                    className={`w-full py-3 pr-4 text-left bg-white border rounded-md shadow-sm flex justify-between items-center text-base
+                    focus:outline-none focus:ring-2 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} ${icon ? 'pl-12' : 'pl-4'}`}
+                >
+                    <span className={value ? 'text-gray-900' : 'text-gray-500'}>
+                        {selectedLabel}
+                    </span>
+                    <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${isOpen ? 'transform rotate-180' : ''}`} />
+                </button>
+                {isOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                        <ul>
+                            {options.map(option => (
+                                <li
+                                    key={option.value}
+                                    onClick={() => handleSelect(option.value)}
+                                    className={`px-4 py-2 cursor-pointer text-gray-900 ${value === option.value ? 'bg-blue-600 text-white' : 'hover:bg-blue-100'}`}
+                                >
+                                    {option.label}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+            </div>
+             {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         </div>
     );
 };

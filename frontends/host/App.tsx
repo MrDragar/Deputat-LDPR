@@ -1,47 +1,118 @@
-import React, { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Header from './components/Header';
-import HomePage from './pages/HomePage';
-import LoadingSpinner from './components/LoadingSpinner';
-import { AuthProvider, useAuth } from './context/AuthContext';
-
-const RemoteAuthApp = lazy(() => import('auth/App'));
-const RemoteRegistrationFormApp = lazy(() => import('registration_form/App'));
-
-const AuthAppWrapper: React.FC = () => {
-  // Получаем состояние и функции из контекста хоста
-  const { isAuthenticated, login, logout } = useAuth();
-
-  // Передаем их как props в удаленное приложение
-  return <RemoteAuthApp isAuthenticated={isAuthenticated} login={login} logout={logout} />;
-};
-
-const RegAppWrapper: React.FC = () => {
-  // Получаем состояние и функции из контекста хоста
-  const { isAuthenticated, login, logout } = useAuth();
-
-  // Передаем их как props в удаленное приложение
-  return <RemoteRegistrationFormApp isAuthenticated={isAuthenticated} login={login} logout={logout} />;
-};
+import React, {Suspense} from 'react';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { FederalPlanProvider } from './context/FederalPlanContext';
+import { AlertProvider } from './context/AlertContext';
+import LoginPage from './pages/auth/LoginPage';
+import MainLayout from './components/layout/MainLayout';
+import DashboardPage from './pages/DashboardPage';
+import ApplicationsListPage from './pages/management/ApplicationsListPage';
+import ApplicationDetailPage from './pages/management/ApplicationDetailPage';
+import MyProfilePage from './pages/profile/MyProfilePage';
+import FederalPlanCreatePage from './pages/federal-plan/FederalPlanCreatePage';
+import FederalPlanEditPage from './pages/federal-plan/FederalPlanEditPage';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import ReportsPage from './pages/reporting/ReportsPage';
+import DeputiesListPage from './pages/deputies/DeputiesListPage';
+import DeputyProfilePage from './pages/deputies/DeputyProfilePage';
+const AutumnReport = React.lazy(() => import('reports/App'));
 
 const App: React.FC = () => {
   return (
-    <AuthProvider>
-      <div className="flex flex-col min-h-screen">
-        <Header />
-        <main className="flex-grow w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <Suspense fallback={<LoadingSpinner />}>
+    <HashRouter>
+      <AuthProvider>
+        <FederalPlanProvider>
+          <AlertProvider>
             <Routes>
-              <Route path="/" element={<HomePage />} />
-              {/* Используем обертку для передачи props в auth */}
-              <Route path="/auth/*" element={<AuthAppWrapper />} />
-              {/* Рендерим registration_form напрямую */}
-              <Route path="/registration_form/*" element={<RemoteRegistrationFormApp />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route 
+                path="/" 
+                element={
+                  <ProtectedRoute>
+                    <MainLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<DashboardPage />} />
+                <Route 
+                  path="federal-plan/create" 
+                  element={
+                    <ProtectedRoute roles={['admin', 'employee']}>
+                      <FederalPlanCreatePage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="federal-plan/edit/:date" 
+                  element={
+                    <ProtectedRoute roles={['admin', 'employee']}>
+                      <FederalPlanEditPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="applications" 
+                  element={
+                    <ProtectedRoute roles={['admin']}>
+                      <ApplicationsListPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="applications/:id" 
+                  element={
+                    <ProtectedRoute roles={['admin']}>
+                      <ApplicationDetailPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                 <Route 
+                  path="deputies" 
+                  element={
+                    <ProtectedRoute roles={['admin', 'coordinator']}>
+                      <DeputiesListPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                 <Route 
+                  path="deputies/:userId" 
+                  element={
+                    <ProtectedRoute roles={['admin', 'coordinator']}>
+                      <DeputyProfilePage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="reports" 
+                  element={
+                    <ProtectedRoute roles={['admin', 'coordinator', 'employee']}>
+                      <ReportsPage />
+                    </ProtectedRoute>
+                  } 
+                />
+                <Route 
+                  path="my-profile" 
+                  element={
+                    <ProtectedRoute roles={['deputy', 'coordinator']}>
+                      <MyProfilePage />
+                    </ProtectedRoute>
+                  } 
+                />
+              </Route>
+                          <Route 
+            path="/autumn-report" 
+            element={
+              <Suspense fallback={<div className="flex items-center justify-center h-screen">Загрузка отчёта...</div>}>
+                <AutumnReport />
+              </Suspense>
+            } 
+          />
+              <Route path="*" element={<Navigate to="/" />} />
             </Routes>
-          </Suspense>
-        </main>
-      </div>
-    </AuthProvider>
+          </AlertProvider>
+        </FederalPlanProvider>
+      </AuthProvider>
+    </HashRouter>
   );
 };
 

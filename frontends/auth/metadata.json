@@ -1,5 +1,0 @@
-{
-  "name": "LDPR Candidate Review",
-  "description": "An application for reviewing and processing registration forms for candidates. Allows administrators to view candidate details and approve or decline their applications.",
-  "requestFramePermissions": []
-}
