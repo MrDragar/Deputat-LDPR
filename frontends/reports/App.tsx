@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { RemoteDataProvider } from './context/RemoteDataContext';
 import RegistrationPage from './pages/RegistrationPage';
 import { User } from './types';
+import './index.css'  // Импорт Tailwind CSS
 
 interface AppProps {
   userData?: User | null;
