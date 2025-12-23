@@ -133,3 +133,5 @@ export const initialFormData: FormData = {
     ldpr_orders: [],
     other_info: '',
 };
+
+export const FORM_PDF_URL_KEY = 'ldpr_report_pdf_url';

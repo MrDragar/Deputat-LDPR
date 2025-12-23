@@ -5,7 +5,7 @@ import {
     FileCheck, MoreHorizontal, Plus, Trash2, X, Check, ArrowLeft, ArrowRight, 
     AlertTriangle 
 } from 'lucide-react';
-import { initialFormData, REGIONS, LEGISLATION_STATUSES, REQUEST_TOPICS_CONFIG, REPRESENTATIVE_BODY_LEVELS } from '../constants';
+import { initialFormData, REGIONS, LEGISLATION_STATUSES, REQUEST_TOPICS_CONFIG, REPRESENTATIVE_BODY_LEVELS, FORM_PDF_URL_KEY } from '../constants';
 import type { FormData, LegislationItem, CitizenReceptions } from '../types';
 import TextInput from '../components/TextInput';
 import SearchableSelect from '../components/SearchableSelect';
@@ -18,6 +18,7 @@ import SuccessPage from './SuccessPage';
 import MonthSelector from '../components/MonthSelector';
 import LinkInputList from '../components/LinkInputList';
 import { useRemoteData } from '../context/RemoteDataContext';
+import { reportApi } from '../services/api';
 import { validateField, validateLegislationItem, validateProjectItem, validateLdprOrder } from '../utils/validation';
 
 // Section definitions aligned with Report structure
@@ -154,6 +155,9 @@ const AddItemButton = ({ onClick, children }: { onClick: () => void, children?: 
 const RegistrationPage: React.FC = () => {
   const { userData, isStandalone, isLoading } = useRemoteData(); // Добавили isLoading
   const [hasAutoFilled, setHasAutoFilled] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [formData, setFormData] = useState<FormData>(() => {
         try {
             const saved = window.localStorage.getItem(FORM_DATA_KEY);
@@ -162,7 +166,15 @@ const RegistrationPage: React.FC = () => {
             return initialFormData;
         }
     });
-
+    const [pdfUrl, setPdfUrl] = useState<string | null>(() => {
+  try {
+    const saved = window.localStorage.getItem(FORM_PDF_URL_KEY);
+    return saved || null;
+  } catch {
+    return null;
+  }
+});
+  
     const [errors, setErrors] = useState<Record<string, string | undefined>>({});
     const [touched, setTouched] = useState<Record<string, boolean>>({});
     const [notification, setNotification] = useState<{ message: React.ReactNode; type: 'success' | 'error' } | null>(null);
@@ -708,39 +720,110 @@ const RegistrationPage: React.FC = () => {
     };
 
     const handleSubmit = async () => {
-        setIsFormAttempted(true); // This will turn all incomplete steps Red
-        
-        let allValid = true;
-        for (let i = 0; i < SECTIONS.length; i++) {
-            if (!isStepValid(i, formData)) allValid = false;
-        }
-
-        if (!allValid) {
-            setNotification({ message: 'В анкете есть незаполненные обязательные поля. Проверьте разделы, отмеченные красным.', type: 'error' });
-            validateAndHighlightStep(currentStep); // Highlight errors in current step
-            return;
-        }
-
-        try {
-            const jsonString = JSON.stringify(formData, null, 2);
-            const blob = new Blob([jsonString], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const safeName = formData.general_info.full_name.replace(/[^a-zа-яё0-9]/gi, '_');
-            a.download = `report_ldpr_${safeName || 'draft'}.json`;
-            a.href = url;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            setIsSubmitted(true);
-            window.localStorage.setItem(FORM_SUBMITTED_KEY, 'true');
-        } catch (e) {
-            setNotification({ message: 'Ошибка при сохранении', type: 'error' });
-        }
-    };
+    setIsFormAttempted(true);
+    setSubmitError(null);
     
+    // Валидация всех шагов
+    let allValid = true;
+    for (let i = 0; i < SECTIONS.length; i++) {
+      if (!isStepValid(i, formData)) allValid = false;
+    }
+
+    if (!allValid) {
+      setNotification({ 
+        message: 'В анкете есть незаполненные обязательные поля. Проверьте разделы, отмеченные красным.', 
+        type: 'error' 
+      });
+      validateAndHighlightStep(currentStep);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Подготавливаем данные для отправки
+      const submissionData = {
+        user_id: userData?.userId || 0,
+        data: formData,
+      };
+
+      console.log('Отправка данных для создания PDF:', submissionData);
+
+      // Отправляем запрос на создание PDF
+      const result = await reportApi.createPdfReport(submissionData);
+
+      if (result.status === 'Success') {
+        // Получаем URL PDF файла
+        const pdfUrl = result.message;
+        setPdfUrl(pdfUrl);
+        
+        setNotification({ 
+          message: (
+            <div>
+              <p className="font-bold">PDF отчёт успешно создан!</p>
+              <p className="text-sm mt-1">Начинается скачивание файла...</p>
+            </div>
+          ), 
+          type: 'success' 
+        });
+        
+        // Автоматически скачиваем PDF
+        await handleDownloadPdf(pdfUrl);
+        
+        // Сохраняем факт успешной отправки
+        window.localStorage.setItem(FORM_SUBMITTED_KEY, 'true');
+        window.localStorage.setItem(FORM_PDF_URL_KEY, pdfUrl); // Сохраняем URL для повторного скачивания
+        setIsSubmitted(true);
+        
+      } else {
+        throw new Error(result.message || 'Неизвестная ошибка сервера');
+      }
+    } catch (error: any) {
+      console.error('Ошибка при создании PDF:', error);
+      setSubmitError(error.message || 'Ошибка при создании PDF отчёта');
+      setNotification({ 
+        message: `Ошибка: ${error.message || 'Не удалось создать PDF файл'}`,
+        type: 'error' 
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDownloadPdf = async (url?: string) => {
+    const pdfUrlToDownload = url || pdfUrl;
+    if (!pdfUrlToDownload) return;
+
+    setIsDownloading(true);
+    try {
+      const filename = `Отчет_ЛДПР_${formData.general_info.full_name || 'депутата'}_${new Date().toLocaleDateString('ru-RU')}.pdf`;
+      await reportApi.downloadPdf(pdfUrlToDownload, filename);
+      
+      setNotification({
+        message: 'PDF файл успешно скачан!',
+        type: 'success'
+      });
+    } catch (error: any) {
+      console.error('Ошибка скачивания PDF:', error);
+      setNotification({
+        message: `Ошибка при скачивании PDF: ${error.message}`,
+        type: 'error'
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const handleEditForm = useCallback(() => {
+    try {
+      window.localStorage.removeItem(FORM_SUBMITTED_KEY);
+      window.localStorage.removeItem(FORM_PDF_URL_KEY);
+      setIsSubmitted(false);
+      setPdfUrl(null);
+      setNotification(null);
+    } catch (e) { console.error(e); }
+  }, []);
+
     const handleClearForm = useCallback(() => {
         setIsClearConfirmOpen(false);
         setFormData(initialFormData);
@@ -760,13 +843,7 @@ const RegistrationPage: React.FC = () => {
         contentRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
     }, []);
 
-    const handleEditForm = useCallback(() => {
-        try {
-            window.localStorage.removeItem(FORM_SUBMITTED_KEY);
-            setIsSubmitted(false);
-            setNotification(null);
-        } catch (e) { console.error(e); }
-    }, []);
+
 
     // --- Render Steps ---
 
@@ -1035,9 +1112,14 @@ const RegistrationPage: React.FC = () => {
 
     // ... rest of the component
     if (isSubmitted) {
-        return <SuccessPage onEdit={handleEditForm} />;
+        return (
+            <SuccessPage
+                onEdit={handleEditForm}
+                pdfUrl={pdfUrl}
+                onDownloadPdf={handleDownloadPdf}
+            />
+        );
     }
-
     const progressPercentage = (currentStep / (SECTIONS.length - 1)) * 100;
 
     return (
