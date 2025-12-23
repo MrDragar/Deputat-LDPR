@@ -1290,8 +1290,8 @@ const RegistrationPage: React.FC = () => {
                                     Вперед <ArrowRight className="h-5 w-5" />
                                 </button>
                             ) : (
-                                <button type="button" onClick={handleSubmit} disabled={isSubmitted} className="px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md bg-green-600 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 hover:bg-green-700">
-                                    {isSubmitted?"Формирую отчет...":"Сформировать отчет"} <Check className="h-5 w-5" />
+                                <button type="button" onClick={handleSubmit} disabled={isSubmitting} className="px-6 py-3 text-base font-semibold rounded-lg flex items-center gap-2 transition-all shadow-md bg-green-600 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-green-500 hover:bg-green-700">
+                                    {isSubmitting?"Формирую отчет...":"Сформировать отчет"} <Check className="h-5 w-5" />
                                 </button>
                             )}
                         </div>
