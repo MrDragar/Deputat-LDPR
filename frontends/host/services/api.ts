@@ -107,7 +107,6 @@ const handleApiResponse = async (response: Response, retryCount = 0): Promise<an
       return null;
     }
   }
-
   // Handle error responses, including expired tokens (401)
   if (response.status === 401 && retryCount === 0) {
     console.log('Token expired, attempting refresh...');
@@ -117,16 +116,22 @@ const handleApiResponse = async (response: Response, retryCount = 0): Promise<an
       // Retry the original request with new token
       const originalUrl = response.url;
       const originalOptions = await response.clone().json().catch(() => ({}));
+      const method = response.method;
       
       // Recreate the request with new token
       const newHeaders = getAuthHeaders();
-      const retryResponse = await fetch(originalUrl, {
-        method: response.method,
+      // Prepare request options based on method
+      const requestOptions: RequestInit = {
+        method: method,
         headers: newHeaders,
-        body: response.method !== 'GET' && response.method !== 'HEAD' 
-          ? JSON.stringify(originalOptions) 
-          : undefined,
-      });
+      };
+      
+      // Only add body for non-GET/HEAD requests
+      if (method !== 'GET' && method !== 'HEAD') {
+        requestOptions.body = JSON.stringify(originalOptions);
+      }
+      
+      const retryResponse = await fetch(originalUrl, requestOptions);
       
       return handleApiResponse(retryResponse, retryCount + 1);
     }
