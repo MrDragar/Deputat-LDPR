@@ -371,6 +371,7 @@ def generate_html_report(data):
                 font-family: 'Geologica',
                 sans-serif; font-weight: 400;
                 font-size: 14.0px; line-height: 15.2px; 
+                word-break: break-word;
             }}
             ul.list-disc {{ margin: 7px 0 6px 0; padding-left: 20px; list-style: none; }}
             ul.list-disc li {{ position: relative; padding-left: 20px; list-style-type: none; padding-bottom: 10px}}
