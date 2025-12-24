@@ -3,4 +3,5 @@ uvicorn
 weasyprint
 pymorphy3
 matplotlib
-celery
+celery==5.5.3
+redis==6.4.0
