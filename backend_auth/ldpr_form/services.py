@@ -35,7 +35,7 @@ def process_form(user_id: int, status: bool, reason: str):
         user.is_active = True
         user.save()
 
-        message = "Поздравляем, вы прошли верификацию. \n" \
+        message = "Поздравляем, вы прошли верификацию. \n\n" \
                   "Ваши данные для входа на сайт депутатлдпр.рф: \n" \
                   f"Логин: <code>{user.login}</code>\n" \
                   f"Пароль: <code>{password}</code>"
