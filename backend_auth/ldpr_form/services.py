@@ -37,8 +37,8 @@ def process_form(user_id: int, status: bool, reason: str):
 
         message = "Поздравляем, вы прошли верификацию. \n" \
                   "Ваши данные для входа на сайт депутатлдпр.рф: \n" \
-                  f"Логин: `{user.login}`\n" \
-                  f"Пароль: `{password}`"
+                  f"Логин: <code>{user.login}</code>\n" \
+                  f"Пароль: <code>{password}</code>"
     else:
         message = "К сожалению, ваша анкета не прошла проверку.\n" \
                   "Причина отклонения анкеты: \n\n" \

@@ -61,7 +61,7 @@ def accept_deputat(user_id: int) \
 def send_message(user_id: int, message: str):
     async def __send_message():
         bot = get_bot()
-        await bot.send_message(user_id, message, parse_mode='MarkdownV2')
+        await bot.send_message(user_id, message, parse_mode='HTML')
     try:
         logger.info(f"Start sending message to {user_id}")
 
