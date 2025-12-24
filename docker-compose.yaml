@@ -64,6 +64,8 @@ services:
     restart: always
     networks:
       - app_network
+    environment:
+      REDIS_URL: "redis://redis:6379/0"
     volumes:
       - ./reports_storage:/app/media
       - ./reports_db.sqlite3:/app/reports_db.sqlite3
