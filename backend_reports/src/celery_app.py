@@ -5,7 +5,7 @@ from src.config import REDIS_URL
 from typing import Optional, Dict, Any, List
 
 client = Celery(
-    'backend_reports',
+    'tg_bot',
     broker=REDIS_URL,
     backend=REDIS_URL,
 )
