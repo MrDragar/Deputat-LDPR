@@ -38,6 +38,6 @@ async def create_pdf(input_data: InputData, request: Request):
     generate_pdf_report(input_data.data.dict(), report_filepath)
     database.insert(input_data.user_id, input_data.data.dict())
     return {"status": "Success", "message": f"{request.base_url}/api/reports/media/{report_filename}".replace(
-        'https://', 'https://')}
+        'http://', 'https://')}
 
 app.include_router(router)
