@@ -59,10 +59,7 @@ class CeleryTaskClient:
 
         if custom_chat_id:
             log_data['custom_chat_id'] = custom_chat_id
-        task = client.send_task(
-            'src.tasks.send_log_to_telegram',
-            args=[log_data],
-            queue='telegram_messages'
-        )
+
+        task = client.send_task('src.tasks.send_log_to_telegram', args=[log_data])
         return task.id
 
