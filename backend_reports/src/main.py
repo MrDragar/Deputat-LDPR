@@ -40,10 +40,16 @@ async def create_pdf(input_data: InputData, request: Request):
         generate_pdf_report(input_data.data.dict(), report_filepath)
         db.insert(input_data.user_id, input_data.data.dict())
         link = f"{request.base_url}/api/reports/media/{report_filename}".replace('http://', 'https://')
-        CeleryTaskClient.send_log(message=f"Новый отчёт у {input_data.data.general_info.full_name}", level='INFO', extra_data={**input_data.data.dict(), "link": link})
+        CeleryTaskClient.send_log(
+            message=f"Новый отчёт у {input_data.data.general_info.full_name}\nСсылка на отчёт: {link}",
+            level='INFO', extra_data={**input_data.data.dict(), "link": link})
         return {"status": "Success", "message": link}
     except Exception as e:
-        CeleryTaskClient.send_log(message=f"Ошибка при создании отчёта у {input_data.data.general_info.full_name}", level='ERROR', extra_data={**input_data.data.dict(), "error": e.__dict__})
+        CeleryTaskClient.send_log(
+            message=f"Ошибка при создании отчёта у {input_data.data.general_info.full_name}",
+            level='ERROR',
+            extra_data={**input_data.data.dict(), "error": e.__dict__}
+        )
         raise
 
 app.include_router(router)
