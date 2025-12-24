@@ -374,7 +374,7 @@ def generate_html_report(data):
             }}
             ul.list-disc {{ margin: 7px 0 6px 0; padding-left: 20px; list-style: none; }}
             ul.list-disc li {{ position: relative; padding-left: 20px; list-style-type: none; padding-bottom: 10px}}
-            ul.list-disc li.small {{ padding-bottom: 0px}}
+            ul.list-disc li.small {{ padding-bottom: 0px; word-break: break-all}}
             ul.list-disc li::before {{
   content: ''; 
   background-image: url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjYiIGhlaWdodD0iNjIiIHZpZXdCb3g9IjAgMCA2NiA2MyIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTM1Ljk1NTYgMjcuOTQyM0w0MC4yOTg2IDAuMzgwODU5SDI1LjI2NTFMMjkuNjA4MSAyNy45NDIzTDQuNzE5MzEgMTUuNDE0NEwwLjA0MjIyMTM0IDI5LjYxMjdMMjcuNDM2NiAzNC4yODk4TDcuODkzMDUgNTMuODMzM0wxOS45MTk5IDYyLjY4NjRMMzIuNzgxOCAzNy45NjQ2TDQ1LjY0MzkgNjIuNjg2NEw1Ny42NzA3IDUzLjgzMzNMMzguMTI3MSAzNC4yODk4TDY1LjUyMTUgMjkuNjEyN0w2MC44NDQ0IDE1LjQxNDRMMzUuOTU1NiAyNy45NDIzWiIgZmlsbD0iIzNCODJGNiIvPgo8L3N2Zz4K"); 
