@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
     User, BarChart3, Scale, Users, MessageCircle, Shield, Briefcase, 
@@ -30,7 +29,7 @@ const SECTIONS = [
     { title: "Примеры обращений", id: 'examples' },
     { title: "Поддержка СВО", id: 'svo' },
     { title: "Проектная деятельность", id: 'projects' },
-    { title: "Поручения ЛДПР", id: 'orders' },
+    { title: "Поручения председателя ЛДПР", id: 'orders' },
     { title: "Иное", id: 'other' }
 ];
 
