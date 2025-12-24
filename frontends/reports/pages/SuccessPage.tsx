@@ -49,10 +49,6 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8 text-center bg-gray-50">
       <div className="max-w-2xl w-full bg-white p-8 rounded-2xl shadow-xl">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <CheckCircle className="h-10 w-10 text-green-600" />
-        </div>
-        
         <h1 className="text-3xl sm:text-4xl font-extrabold text-slate-800 tracking-tight mb-4">
           Отчет успешно сформирован!
         </h1>
