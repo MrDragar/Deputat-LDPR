@@ -117,7 +117,7 @@ const handleApiResponse = async (response: Response, retryCount = 0): Promise<an
       const originalUrl = response.url;
       const originalOptions = await response.clone().json().catch(() => ({}));
       const method = response.method;
-      
+
       // Recreate the request with new token
       const newHeaders = getAuthHeaders();
       // Prepare request options based on method
@@ -127,7 +127,7 @@ const handleApiResponse = async (response: Response, retryCount = 0): Promise<an
       };
       
       // Only add body for non-GET/HEAD requests
-      if (method !== 'GET' && method !== 'HEAD') {
+      if (method !== 'GET' && method !== 'HEAD' && originalOptions.body) {
         requestOptions.body = JSON.stringify(originalOptions);
       }
       
