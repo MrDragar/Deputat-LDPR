@@ -36,7 +36,6 @@ const LoginPage: React.FC = () => {
           <div className="flex flex-col items-center text-center mb-8">
             <h1 className="text-4xl font-bold text-blue-700 mb-4">ЛДПР</h1>
             <h2 className="text-2xl font-bold text-gray-900">Вход в систему</h2>
-            <p className="text-gray-600 mt-2 text-sm">Войдите, чтобы начать работу с анкетами кандидатов.</p>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
             <TextInput
@@ -68,9 +67,6 @@ const LoginPage: React.FC = () => {
                   }
                 />
                  <div className="text-right">
-                  <a href="#" className="text-sm font-medium text-gray-600 hover:text-black transition-colors">
-                    Забыли пароль?
-                  </a>
                 </div>
             </div>
 
