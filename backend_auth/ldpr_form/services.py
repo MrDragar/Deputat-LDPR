@@ -25,7 +25,6 @@ def process_form(user_id: int, status: bool, reason: str):
     user: User = User.objects.get(user_id=user_id)
     if user.is_active:
         raise UserIsActiveError()
-
     if status:
         password = get_random_string(10, string.ascii_lowercase)
         user.set_password(password)
@@ -46,7 +45,7 @@ def process_form(user_id: int, status: bool, reason: str):
                   "Причина отклонения анкеты: \n\n" \
                   f"{reason}"
         user.delete()
-    if user.user_id < 100:
+    if user_id < 100:
         return
     result = celery_app.send_task("src.tasks.send_message",
                                   args=(user_id, message)).get()
