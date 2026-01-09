@@ -10,6 +10,7 @@ router = Router()
 
 @router.chat_join_request()
 async def chat_join_request_handler(chat_join_request: types.ChatJoinRequest) -> Any:
-    if check_user_is_available(get_db_sync(), chat_join_request.from_user.id):
-        return await chat_join_request.approve()
+    with get_db() as session:
+        if check_user_is_available(session, chat_join_request.from_user.id):
+            return await chat_join_request.approve()
     await chat_join_request.decline()

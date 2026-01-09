@@ -10,7 +10,7 @@ from asgiref.sync import async_to_sync
 from src.celery_app import app
 from src.config import BOT_TOKEN, CHAT_ID, INFO_LOG_CHAT_ID, ERROR_LOG_CHAT_ID
 from src.services.user import create_user
-from src.database import get_db_sync
+from src.database import get_db
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,8 @@ def accept_deputat(user_id: int) \
         -> Dict[str, Any]:
     async def __accept_deputat():
         bot = get_bot()
-        create_user(get_db_sync(), user_id, True)
+        with get_db() as session:
+            create_user(session, user_id, True)
         link = await bot.create_chat_invite_link(CHAT_ID, creates_join_request=True)
         return await bot.send_message(
             chat_id=user_id,
@@ -47,7 +48,7 @@ def accept_deputat(user_id: int) \
 
         finally:
             loop.close()
-    
+
     except Exception as e:
         logger.error(f"Error sending message to {user_id}: {e}")
         return {
