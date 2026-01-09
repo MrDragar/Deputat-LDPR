@@ -101,8 +101,6 @@ const FederalPlanPage: React.FC = () => {
         <div className="p-4 sm:p-6 border-b border-gray-200">
           <div className="flex justify-between items-center gap-4">
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Федеральный план</h1>
-                <p className="mt-1 text-gray-500">Календарь партийных событий и мероприятий</p>
             </div>
             {isAdmin && (
                 <Link
