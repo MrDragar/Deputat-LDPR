@@ -28,9 +28,36 @@ def process_form(user_id: int, status: bool, reason: str):
     if status:
         password = get_random_string(10, string.ascii_lowercase)
         user.set_password(password)
-        user.login = f"{user.deputy_form.last_name}{user.deputy_form.first_name[0]}".strip()
+
+        base_login = f"{user.deputy_form.last_name}{user.deputy_form.first_name[0]}".strip()
         if user.deputy_form.middle_name:
-            user.login = f"{user.deputy_form.last_name}{user.deputy_form.first_name[0]}{user.deputy_form.middle_name[0]}".strip()
+            base_login = f"{user.deputy_form.last_name}{user.deputy_form.first_name[0]}{user.deputy_form.middle_name[0]}".strip()
+        region = user.deputy_form.region
+        existing_user_same_region = User.objects.filter(
+            login=base_login,
+            deputy_form__region=region,
+            is_active=True
+        ).exclude(user_id=user_id).first()
+        if existing_user_same_region:
+            raise ValueError(
+                f"Депутат с ФИО '{user.deputy_form.last_name} {user.deputy_form.first_name}' "
+                f"уже зарегистрирован в регионе '{region}'"
+            )
+        existing_user_other_region = User.objects.filter(
+            login__startswith=base_login,
+            is_active=True
+        ).exclude(user_id=user_id).first()
+        if existing_user_other_region:
+            counter = 1
+            new_login = f"{base_login}_{counter}"
+
+            while User.objects.filter(login=new_login,
+                                      is_active=True).exists():
+                counter += 1
+                new_login = f"{base_login}_{counter}"
+            user.login = new_login
+        else:
+            user.login = base_login
         user.is_active = True
         user.save()
 
