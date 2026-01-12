@@ -23,10 +23,14 @@ def get_bot():
 def accept_deputat(user_id: int) \
         -> Dict[str, Any]:
     async def __accept_deputat():
+        logger.info(f"Accepting {user_id} deputy")
         bot = get_bot()
         with get_db() as session:
             create_user(session, user_id, True)
+
+        logger.debug(f"Creation link for {user_id} deputy")
         link = await bot.create_chat_invite_link(CHAT_ID, creates_join_request=True)
+        logger.debug(f"Sending link for {user_id} deputy")
         return await bot.send_message(
             chat_id=user_id,
             text=f"Присоединяйтесь к чату депутатов ЛДПР: {link.invite_link}"
