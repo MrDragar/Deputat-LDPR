@@ -1,3 +1,5 @@
+import logging
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -26,6 +28,7 @@ class UserDetailAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, user_id):
+        user_id = int(user_id)
         if user_id != request.user.user_id and request.user.role not in ["admin", "coordinator"]:
             self.permission_denied(
                 request,
