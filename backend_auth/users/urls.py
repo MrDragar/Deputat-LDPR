@@ -1,9 +1,7 @@
-from django.urls import path
+from django.urls import path, re_path
 from .views import UserListAPIView, UserDetailAPIView
 
 urlpatterns = [
     path('/', UserListAPIView.as_view(), name='user-list'),
-    path('/<int:user_id>/', UserDetailAPIView.as_view(), name='user-detail'),
-    path('/-<int:user_id>/', UserDetailAPIView.as_view(), name='user-detail-neg'),
-
+    re_path(r'^/(?P<user_id>-?\d+)/$', UserDetailAPIView.as_view(), name='user-detail'),
 ]
