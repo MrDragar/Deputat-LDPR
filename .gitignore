@@ -204,3 +204,6 @@ __marimo__/
 .streamlit/secrets.toml
 scripts
 jwt_keys/
+dozzle_users.yml
+reports_storage
+docker-logs

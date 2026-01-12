@@ -7,8 +7,7 @@ from django.utils.deprecation import MiddlewareMixin
 from django.conf import settings
 from io import BytesIO
 
-request_logger = logging.getLogger('request_logger')
-error_logger = logging.getLogger('error_logger')
+request_logger = logging.getLogger('loggers')
 
 
 class RequestResponseLoggingMiddleware(MiddlewareMixin):
@@ -20,12 +19,12 @@ class RequestResponseLoggingMiddleware(MiddlewareMixin):
         super().__init__(get_response)
         self.get_response = get_response
         self.exclude_paths = getattr(settings, 'LOG_EXCLUDE_PATHS', [
-            '/health/', '/metrics/', '/static/', '/media/'
+            '/health/', '/metrics/', '/static/', '/media/', '/api/auth/login', '/api/auth/refresh', '/api/auth/verify'
         ])
 
     def __call__(self, request):
         # Пропускаем исключенные пути
-        if any(path in request.path for path in self.exclude_paths):
+        if any(path.startswith(request.path) for path in self.exclude_paths):
             return self.get_response(request)
 
         # Генерируем ID для отслеживания цепочки запросов
@@ -97,13 +96,13 @@ class RequestResponseLoggingMiddleware(MiddlewareMixin):
             }
 
             # Логируем как ERROR
-            error_logger.error(
-                f"{request.method} {request.path} - {response.status_code}",
+            request_logger.error(
+                f"{request.method} {request.path} - {response.status_code}\n{log_data}",
                 extra={'log_data': log_data}
             )
 
         except Exception as e:
-            error_logger.error(f"Error response logging error: {e}")
+            request_logger.error(f"Error response logging error: {e}")
 
     def log_exception(self, request, exception, duration, request_id,
                       request_body=None):
@@ -135,15 +134,14 @@ class RequestResponseLoggingMiddleware(MiddlewareMixin):
                 'user': self._get_user_info(request),
             }
 
-            error_logger.error(
+            request.error(
                 f"Unhandled exception in {request.method} {request.path}: {str(exception)}",
                 extra={'log_data': log_data},
                 exc_info=False
-                # Не дублируем traceback, т.к. уже добавили в log_data
             )
 
         except Exception as e:
-            error_logger.error(f"Exception logging error: {e}")
+            request_logger.error(f"Exception logging error: {e}")
 
     def _get_response_data(self, response):
         """Безопасно извлекает данные из response"""
@@ -214,13 +212,13 @@ class RequestResponseLoggingMiddleware(MiddlewareMixin):
 
             # Логируем с дополнительными данными
             request_logger.info(
-                f"{request.method} {request.path} - {response.status_code}",
+                f"{request.method} {request.path} - {response.status_code}.\n{log_data}",
                 extra={'log_data': log_data}
             )
 
         except Exception as e:
             # Fallback логирование если что-то пошло не так
-            error_logger.error(f"Request logging error: {e}")
+            request_logger.error(f"Request logging error: {e}")
 
     def _mask_sensitive_data(self, data):
         """Маскирует чувствительные данные"""
