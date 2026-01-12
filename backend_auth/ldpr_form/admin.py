@@ -232,6 +232,11 @@ class UserAdmin(admin.ModelAdmin):
 
         # Если анкеты нет, не показываем inline
         return []
+    def save_model(self, request, obj, form, change):
+        """Обработка пароля"""
+        if 'password' in form.cleaned_data and form.cleaned_data['password']:
+            obj.set_password(form.cleaned_data['password'])
+        super().save_model(request, obj, form, change)
 
 # Если вы используете @admin.register, вам не нужно вызывать admin.site.register() отдельно.
 # Для всех остальных моделей, которые не имеют Inlines:
