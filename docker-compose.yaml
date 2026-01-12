@@ -1,4 +1,48 @@
+x-logging: &default-logging
+  driver: "syslog"
+  options:
+    syslog-address: "tcp://172.20.0.100:514"
+    tag: "{{.Name}}"
+    syslog-format: "rfc3164"
+
 services:
+  syslog_server:
+    image: voxxit/rsyslog:latest
+    container_name: syslog_server
+    ports:
+      - "514:514/tcp"
+    volumes:
+      - ./docker-logs:/var/log
+      - ./rsyslog.conf:/etc/rsyslog.conf:ro
+    networks:
+      app_network:
+        ipv4_address: 172.20.0.100
+    hostname: syslog_server
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "514" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+  dozzle:
+    image: amir20/dozzle:latest
+    container_name: dozzle
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./docker-logs:/logs:ro
+      - ./dozzle_users.yml:/data/users.yml:ro
+    ports:
+      - "8080:8080"
+    networks:
+      - app_network
+    environment:
+      - DOZZLE_AUTH_PROVIDER=simple
+      - DOZZLE_AUTH_SIMPLE_USERNAME=admin
+      - DOZZLE_AUTH_SIMPLE_PASSWORD=your_password  # Здесь пароль в открытом виде
+    env_file:
+      - .env
+    restart: unless-stopped
   db_auth:
     image: postgres:17
     environment:
@@ -12,6 +56,10 @@ services:
       - .env
     networks:
       - app_network
+    logging: *default-logging
+    depends_on:
+      syslog_server:
+        condition: service_healthy
 
   # Redis как брокер для Celery
   redis:
@@ -24,6 +72,10 @@ services:
     networks:
       - app_network
     restart: unless-stopped
+    logging: *default-logging
+    depends_on:
+      syslog_server:
+        condition: service_healthy
 
   backend_auth:
     build: ./backend_auth
@@ -49,11 +101,17 @@ services:
       - jwt_private_key
       - jwt_public_key
     depends_on:
-      - redis
-      - db_auth
+      redis:
+        condition: service_started
+      db_auth:
+        condition: service_started
+      syslog_server:
+        condition: service_healthy
     networks:
       - app_network
     restart: unless-stopped
+#    logging: *default-logging
+    logging: *default-logging
 
   backend_reports:
     build: ./backend_reports
@@ -69,6 +127,10 @@ services:
     volumes:
       - ./reports_storage:/app/media
       - ./reports_db.sqlite3:/app/reports_db.sqlite3
+    depends_on:
+      syslog_server:
+        condition: service_healthy
+    logging: *default-logging
 
   db_tg:
     image: postgres:17
@@ -83,6 +145,10 @@ services:
       - .env
     networks:
       - app_network
+    depends_on:
+      syslog_server:
+        condition: service_healthy
+    logging: *default-logging
 
   tg_bot:
     build: ./tg_bot
@@ -106,11 +172,16 @@ services:
     env_file:
       - .env
     depends_on:
-      - redis
-      - db_tg
+      redis:
+        condition: service_started
+      db_tg:
+        condition: service_started
+      syslog_server:
+        condition: service_healthy
     networks:
       - app_network
     restart: unless-stopped
+    logging: *default-logging
 
   tg_celery_worker:
     build: ./tg_bot
@@ -135,11 +206,16 @@ services:
     env_file:
       - .env
     depends_on:
-      - redis
-      - tg_bot
+      redis:
+        condition: service_started
+      tg_bot:
+        condition: service_started
+      syslog_server:
+        condition: service_healthy
     networks:
       - app_network
     restart: unless-stopped
+    logging: *default-logging
 
   frontends:
     build: ./frontends
@@ -154,6 +230,10 @@ services:
       PREFIX_FRONTEND_BACKEND_URL: ${BASE_URL}
     env_file:
       - .env
+    depends_on:
+      syslog_server:
+        condition: service_healthy
+    logging: *default-logging
   nginx_proxy:
     build: ./proxy
     container_name: nginx_proxy
@@ -165,7 +245,8 @@ services:
     networks:
       - app_network
     restart: unless-stopped
-    
+    logging: *default-logging
+
 volumes:
   redis_data:
   postgres_data_auth:
@@ -180,3 +261,6 @@ secrets:
 networks:
   app_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
