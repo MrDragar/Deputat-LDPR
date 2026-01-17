@@ -34,6 +34,24 @@ COPY registration_form .
 # Собираем приложение
 RUN npm run build
 
+
+# Используем официальный образ Node.js на основе Alpine (легковесный)
+FROM node:18-alpine as builder_dashboard
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем файлы зависимостей
+COPY dashboard/package.json dashboard/package-lock.json ./
+
+# Устанавливаем зависимости
+RUN npm ci
+
+# Копируем остальные файлы проекта
+COPY dashboard .
+
+# Собираем приложение
+RUN npm run build
 # Используем официальный образ Node.js на основе Alpine (легковесный)
 FROM node:18-alpine as builder_host
 
@@ -59,10 +77,10 @@ FROM nginx:alpine
 # Копируем собранное приложение
 COPY --from=builder_host /app/dist /usr/share/nginx/html
 COPY --from=builder_reports /app/dist /usr/share/nginx/html/reports/
+COPY --from=builder_dashboard /app/dist /usr/share/nginx/html/dashboard/
 COPY --from=builder_registration_form /app/dist /usr/share/nginx/html/registration_form/
 RUN mkdir -p  /usr/share/nginx/html/images/
 COPY --from=builder_reports /app/dist/images/reposts /usr/share/nginx/html/images/reposts
-#COPY --from=builder_registration_form /app/dist/images/registration_form /usr/share/nginx/html/images/registration_form
 COPY host/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Открываем порт

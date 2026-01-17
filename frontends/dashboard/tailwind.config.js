@@ -1,0 +1,27 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./components/**/*.{js,ts,jsx,tsx}", // Если есть папка components
+    "./components/*.{js,ts,jsx,tsx}", // Если есть папка components
+    "./pages/**/*.{js,ts,jsx,tsx}",      // Если есть папка pages
+    "./App.tsx"
+  ],
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          surface: '#ffffff', // Белый цвет
+          background: '#f9fafb', // Светло-серый фон
+          primary: '#3b82f6', // Синий основной
+          'on-surface-primary': '#111827', // Темно-серый для текста
+          'on-surface-secondary': '#6b7280', // Серый для второстепенного текста
+        }
+      },
+      backgroundColor: {
+        'brand-surface': '#ffffff', // Альтернативно через backgroundColor
+      }
+    },
+  },
+  plugins: [],
+}

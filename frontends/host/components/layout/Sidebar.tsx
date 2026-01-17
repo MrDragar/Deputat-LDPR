@@ -12,7 +12,8 @@ import {
   ChevronLeft,
   ChevronRight,
   BarChart3,
-  Calendar
+  Calendar,
+  LayoutDashboard
 } from 'lucide-react';
 const ReportsApp = lazy(() => import('reports/App'));
 
@@ -34,6 +35,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setCollapsed, isMobileOp
     { to: '/applications', text: 'Заявки', icon: FileText, roles: ['admin'], external: false },
     { to: '/reports', text: 'Отчётность', icon: BarChart3, roles: ['admin', 'coordinator', 'employee'], external: false },
     { to: '/my-profile', text: 'Моя анкета', icon: UserIcon, roles: ['deputy', 'coordinator'], external: false },
+     { to: '/dashboard', text: 'Дашборд', icon: LayoutDashboard, roles: ['admin'], external: true },
   ];
 
   const filteredNavItems = navItems.filter(item => user && item.roles.includes(user.role));
