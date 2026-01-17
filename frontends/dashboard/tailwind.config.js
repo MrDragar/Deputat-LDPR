@@ -14,6 +14,7 @@ export default {
           surface: '#ffffff', // Белый цвет
           background: '#f9fafb', // Светло-серый фон
           primary: '#3b82f6', // Синий основной
+          secondary: '#3b82f6', // Зеленый (для выбранных чекбоксов) ← ДОБАВЬТЕ ЭТО
           'on-surface-primary': '#111827', // Темно-серый для текста
           'on-surface-secondary': '#6b7280', // Серый для второстепенного текста
         }
