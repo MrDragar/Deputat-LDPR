@@ -1,0 +1,6 @@
+{
+  "name": "JSON Data Collector",
+  "description": "A sleek web application for filling out a form with sender/recipient details and capturing a signature in SVG format, then exporting the data as a JSON file.",
+  "requestFramePermissions": [],
+  "prompt": ""
+}

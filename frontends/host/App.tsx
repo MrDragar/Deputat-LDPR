@@ -20,6 +20,7 @@ import { api } from './services/api';
 import './index.css'  // Импорт Tailwind CSS
 const AutumnReport = React.lazy(() => import('reports/App'));
 const DashboardApp = React.lazy(() => import('dashboard/App'));
+const CongratsApp = React.lazy(() => import('congrats/App'));
 
 const App: React.FC = () => {
   return (
@@ -101,6 +102,14 @@ const App: React.FC = () => {
                       <MyProfilePage />
                     </ProtectedRoute>
                   } 
+                />
+                <Route
+                  path="congrats"
+                  element={
+                    <ProtectedRoute roles={['deputy', 'coordinator', 'admin']}>
+                      <CongratsApp />
+                    </ProtectedRoute>
+                  }
                 />
               </Route>
 

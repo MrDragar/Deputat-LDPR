@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => {
                 remotes: {
                 reports: `/reports/assets/remoteEntry.js`,
                 dashboard: `/dashboard/assets/remoteEntry.js`,
+                congrats: `/congrats/assets/remoteEntry.js`,
               },
               shared: ['react', 'react-dom', 'react-router-dom', 'lucide-react', 'recharts'],
           }),

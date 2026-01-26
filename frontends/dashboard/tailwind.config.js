@@ -9,20 +9,22 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        brand: {
-          surface: '#ffffff', // Белый цвет
-          background: '#f9fafb', // Светло-серый фон
-          primary: '#3b82f6', // Синий основной
-          secondary: '#3b82f6', // Зеленый (для выбранных чекбоксов) ← ДОБАВЬТЕ ЭТО
-          'on-surface-primary': '#111827', // Темно-серый для текста
-          'on-surface-secondary': '#6b7280', // Серый для второстепенного текста
-        }
+      fontFamily: {
+        inter: ['Inter', 'sans-serif'],
       },
-      backgroundColor: {
-        'brand-surface': '#ffffff', // Альтернативно через backgroundColor
+      colors: {
+        // 1. Твои фирменные цвета
+        'brand-primary': '#3E66F4',
+        'brand-secondary': '#2842D5',
+        'brand-background': '#F5F8FA',
+        'brand-surface': '#FFFFFF',
+        'brand-on-primary': '#FFFFFF',
+        'brand-on-surface-primary': '#1A202C',
+        'brand-on-surface-secondary': '#718096',
+        'brand-positive': '#48BB78',
+        'brand-negative': '#E53E3E',
+        plugins: [],
       }
-    },
-  },
-  plugins: [],
+    }
+  }
 }
