@@ -13,7 +13,7 @@ from app.pdf_creater import generate_pdf_report
 
 
 app = FastAPI()
-app.mount("/media", StaticFiles(directory="media"), name="media")
+app.mount("/api/congrats/media", StaticFiles(directory="media"), name="media")
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,7 +25,7 @@ app.add_middleware(
 )
 
 
-@app.get("/ping")
+@app.get("/api/congrats/ping")
 async def ping():
     return {"message": "Pong"}
 
@@ -45,7 +45,7 @@ class LetterRequest(BaseModel):
     recipient: Union[IndividualRecipient, LegalEntityRecipient]
 
 
-@app.post("/generate_letter")
+@app.post("/api/congrats/generate_letter")
 async def create_pdf(letter_request: LetterRequest, request: Request):
     letter_filename = f"letter_{uuid.uuid4()}.pdf"
     letter_filepath = os.path.join("media", letter_filename)
