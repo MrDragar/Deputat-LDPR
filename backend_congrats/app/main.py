@@ -62,4 +62,4 @@ async def create_pdf(letter_request: LetterRequest, request: Request):
     # Assuming generate_pdf_report writes the PDF to letter_filepath
     generate_pdf_report(request_dict, letter_filepath)
     
-    return {"status": "Success", "message": f"{request.base_url}media/{letter_filename}"}
+    return {"status": "Success", "message": f"{request.base_url}api/congrats/media/{letter_filename}".replace('http:', 'https:')}
