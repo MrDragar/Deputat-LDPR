@@ -132,6 +132,22 @@ services:
         condition: service_healthy
     logging: *default-logging
 
+  backend_congrats:
+    build: ./backend_congrats
+    container_name: backend_congrats
+    command: uvicorn app.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
+    ports:
+      - "8004:8000"
+    restart: always
+    networks:
+      - app_network
+    volumes:
+      - ./backend_congrats:/usr/src/app
+    depends_on:
+      syslog_server:
+        condition: service_healthy
+    logging: *default-logging
+
   db_tg:
     image: postgres:17
     environment:

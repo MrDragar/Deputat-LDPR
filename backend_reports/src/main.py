@@ -32,6 +32,15 @@ async def ping():
     return {"message": "Pong"}
 
 
+@router.post("/without_logs")
+async def create_pdf(input_data: InputData, request: Request):
+    report_filename = f"report_{uuid.uuid4()}.pdf"
+    report_filepath = os.path.join("media", report_filename)
+    generate_pdf_report(input_data.data.dict(), report_filepath)
+    link = f"{request.base_url}/api/reports/media/{report_filename}".replace('http://', 'https://')
+    return {"status": "Success", "message": link}
+
+
 @router.post("/")
 async def create_pdf(input_data: InputData, request: Request):
     try:
