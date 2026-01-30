@@ -29,7 +29,8 @@ const SECTIONS = [
     { title: "Профессиональная деятельность", fields: ['professionalSphere', 'awards'] },
     { title: "Увлечения и интересы", fields: ['sports', 'recreation', 'hobbies'] },
     { title: "Обратная связь", fields: ['ldprResources', 'centralOfficeAssistant', 'knowledgeGaps'] },
-    { title: "Дополнительная информация", fields: ['additionalInfo', 'suggestions', 'talents', 'knowledgeToShare', 'superpower'] }
+    // { title: "Дополнительная информация", fields: ['additionalInfo', 'suggestions', 'talents', 'knowledgeToShare', 'superpower'] }
+    { title: "Дополнительная информация", fields: ['additionalInfo', 'suggestions', 'talents', 'knowledgeToShare'] }
 ];
 
 const STEP_ICONS = [
@@ -867,7 +868,7 @@ const RegistrationPage: React.FC = () => {
                 (processedData as any)[field] = (processedData[field] as string[]).filter(item => item !== 'Другое');
             }
         });
-
+        processedData.superpower = '-'; // Заставили убрать суперсилу
         // Reorder at the end to ensure telegramId is first
         const { telegramId, ...rest } = processedData;
         return { telegramId, ...rest };
@@ -1157,7 +1158,7 @@ const RegistrationPage: React.FC = () => {
                     <TextInput type="textarea" label="Ваши предложения по улучшению работы ЛДПР" name="suggestions" value={formData.suggestions} onChange={handleFieldChange} onBlur={handleFieldBlur} error={touched.suggestions ? errors.suggestions : undefined} required />
                     <TextInput type="textarea" label="Какими талантами вы обладаете?" name="talents" value={formData.talents} onChange={handleFieldChange} onBlur={handleFieldBlur} error={touched.talents ? errors.talents : undefined} required />
                     <TextInput type="textarea" label="Какими знаниями вы были бы готовы поделиться с коллегами?" name="knowledgeToShare" value={formData.knowledgeToShare} onChange={handleFieldChange} onBlur={handleFieldBlur} error={touched.knowledgeToShare ? errors.knowledgeToShare : undefined} required />
-                    <TextInput type="textarea" label="Что вы можете назвать своей СУПЕРсилой?" name="superpower" value={formData.superpower} onChange={handleFieldChange} onBlur={handleFieldBlur} error={touched.superpower ? errors.superpower : undefined} required />
+                    {/*<TextInput type="textarea" label="Что вы можете назвать своей СУПЕРсилой?" name="superpower" value={formData.superpower} onChange={handleFieldChange} onBlur={handleFieldBlur} error={touched.superpower ? errors.superpower : undefined} required />*/}
                 </div>
             );
             default: return null;

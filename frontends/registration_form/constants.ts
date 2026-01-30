@@ -125,5 +125,5 @@ export const initialFormData: FormData = {
     suggestions: '',
     talents: '',
     knowledgeToShare: '',
-    superpower: '',
+    superpower: '-',
 };
