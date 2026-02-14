@@ -24,7 +24,7 @@ app.add_middleware(
     expose_headers=["*"]
 )
 
-app.include_router(root_router)
+app.include_router(root_router, prefix="/api/federal_plan", tags=[""])
 logging.basicConfig(
     level=config.log_level,
     format=config.log_format,
