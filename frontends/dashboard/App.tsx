@@ -279,15 +279,15 @@ const App: React.FC = () => {
     );
 
     if (loading) {
-        return <div className="flex items-center justify-center min-h-screen"><p className="text-xl">Загрузка данных...</p></div>;
+        return <div id="dashboard-root" className="flex items-center justify-center min-h-screen"><p className="text-xl">Загрузка данных...</p></div>;
     }
 
     if (error) {
-        return <div className="flex items-center justify-center min-h-screen"><p className="text-xl text-red-500 p-8">{error}</p></div>;
+        return <div id="dashboard-root" className="flex items-center justify-center min-h-screen"><p className="text-xl text-red-500 p-8">{error}</p></div>;
     }
 
     return (
-        <div className="bg-brand-background min-h-screen text-brand-on-surface-primary font-inter">
+        <div id="dashboard-root" className="bg-brand-background min-h-screen text-brand-on-surface-primary font-inter">
             {view.screen === 'dashboard' && renderDashboard()}
             {view.screen === 'details' && processedData && view.region && (
                 <DetailedAnalytics

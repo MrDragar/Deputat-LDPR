@@ -128,16 +128,17 @@ const App: React.FC = () => {
                     </ProtectedRoute>
                   }
                 />
+
+                  <Route
+                      path="dashboard"
+                      element={
+                          <ProtectedRoute roles={['admin']}>
+                              <DashboardApp />
+                          </ProtectedRoute>
+                      }
+                  />
               </Route>
 
-              <Route
-                path="dashboard"
-                element={
-                    <ProtectedRoute roles={['admin']}>
-                        <DashboardApp />
-                    </ProtectedRoute>
-                }
-                />
 <Route
   path="/autumn-report" 
   element={

@@ -2,6 +2,7 @@
 const colors = require('tailwindcss/colors')
 
 export default {
+  important: '#congrats-root',
   content: [
     "./index.html",
     // "./components/**/*.{js,ts,jsx,tsx}", // Если есть папка components

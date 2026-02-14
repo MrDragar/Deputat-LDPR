@@ -1,19 +1,9 @@
-/*@tailwind base;*/
-/*@tailwind components;*/
-/*@tailwind utilities;*/
-/* Это РАБОТАЕТ, но не рекомендуется */
-@import "tailwindcss/base";
-@import "tailwindcss/components";
-@import "tailwindcss/utilities";
+/*@layer mfe_dashboard {*/
+    @import "tailwindcss/base";
+    @import "tailwindcss/components";
+    @import "tailwindcss/utilities";
+/*}*/
 
-/* Дополнительно для iOS */
-@supports (-webkit-overflow-scrolling: touch) {
-  .container {
-    -webkit-transform: translateZ(0); /* Hardware acceleration */
-    transform: translateZ(0);
-  }
-}
-       /* Custom Scrollbar Styles */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;

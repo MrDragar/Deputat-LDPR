@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  important: '#dashboard-root',
   content: [
     "./index.html",
     "./components/**/*.{js,ts,jsx,tsx}", // Если есть папка components
