@@ -6,23 +6,34 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-:root, html, body, #root {
-  overflow: visible !important;
-  overflow-y: auto !important;
-  height: auto !important;
-  min-height: 100% !important;
-  position: static !important;
+/* Исправление для мобильных устройств */
+html, body {
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important; /* Ключевое свойство для iOS */
+  overscroll-behavior: auto !important; /* Отключаем запрет на нативную прокрутку */
+  position: relative !important; /* Переопределяем fixed */
+  height: 100% !important;
+}
+
+#root {
+  overflow: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  height: 100% !important;
 }
 
 .bg-brand-background {
-  overflow: visible !important;
-  height: auto !important;
-  min-height: 100vh;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important; /* Плавный скролл на iOS */
+  overscroll-behavior: contain; /* Мягкое поведение при достижении края */
+  height: 100% !important;
 }
 
-.container {
-  overflow: visible !important;
-  height: auto !important;
+/* Дополнительно для iOS */
+@supports (-webkit-overflow-scrolling: touch) {
+  .container {
+    -webkit-transform: translateZ(0); /* Hardware acceleration */
+    transform: translateZ(0);
+  }
 }
        /* Custom Scrollbar Styles */
         ::-webkit-scrollbar {
