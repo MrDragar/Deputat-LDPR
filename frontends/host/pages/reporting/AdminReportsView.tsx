@@ -82,8 +82,7 @@ const AdminReportsView: React.FC = () => {
             ...prev, 
             [periodId]: { reports: sortedReports, loading: false } 
         }));
-    } catch (error){
-        console.error(error)
+    } catch {
         showAlert('error', 'Ошибка', 'Не удалось загрузить отчеты периода.');
     }
   };

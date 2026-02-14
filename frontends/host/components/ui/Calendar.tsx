@@ -20,7 +20,7 @@ import { ru } from 'date-fns/locale/ru';
 
 export interface DateRange {
     from: Date | undefined;
-    to: Date | undefined;
+    to?: Date | undefined; // Changed to optional to match react-day-picker types
 }
 
 interface CalendarProps {

@@ -5,3 +5,16 @@
 @import "tailwindcss/base";
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
+
+/* 
+  Фикс для мобильных браузеров:
+  Жестко фиксируем высоту html и body и запрещаем им скроллиться.
+  Это предотвращает скрытие адресной строки браузера при скролле контента.
+*/
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden; /* Критично: запрещает скролл документа */
+  overscroll-behavior: none; /* Убирает эффект "пружины" на iOS */
+  position: fixed; /* Дополнительная гарантия фиксации на некоторых версиях iOS */
+}

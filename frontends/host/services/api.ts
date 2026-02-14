@@ -1,14 +1,14 @@
-import type {
-  RegistrationForm,
-  User,
-  ReportPeriod,
-  Report,
-  RegionReport,
-  DeputyRecord,
-  ReportRecord,
-  AdminViewData,
-  CoordinatorViewData,
-  DeputyViewData, DeputyLevel
+import type { 
+    RegistrationForm, 
+    User,
+    ReportPeriod, 
+    Report,
+    RegionReport,
+    DeputyRecord,
+    ReportRecord,
+    AdminViewData,
+    CoordinatorViewData,
+    DeputyViewData
 } from '../types';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';

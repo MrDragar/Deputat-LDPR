@@ -3,6 +3,7 @@ import { initialFederalPlanData, PartyImage } from '../data/federalPlanData';
 import type { DailyPlan, PlanEvent } from '../data/federalPlanData';
 import { api } from '../services/api';
 import { useAuth } from './AuthContext';
+import { DateRange } from 'react-day-picker';
 
 interface FederalPlanContextType {
     plans: DailyPlan[];
@@ -12,6 +13,9 @@ interface FederalPlanContextType {
     updatePlan: (updatedPlan: DailyPlan) => Promise<void>;
     deletePlan: (date: string) => Promise<void>;
     refreshPlans: () => Promise<void>;
+    // New state for date persistence
+    dateRange: DateRange | undefined;
+    setDateRange: (range: DateRange | undefined) => void;
 }
 
 const FederalPlanContext = createContext<FederalPlanContextType | null>(null);
@@ -50,6 +54,9 @@ export const FederalPlanProvider: React.FC<{ children: React.ReactNode }> = ({ c
     const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
     const [plans, setPlans] = useState<DailyPlan[]>(initialFederalPlanData);
     const [loading, setLoading] = useState(false);
+    
+    // Перенесли состояние даты сюда. При маунте провайдера (входе в раздел) оно инициализируется текущей датой.
+    const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: new Date(), to: undefined });
 
     const refreshPlans = useCallback(async () => {
         // Загружаем данные только если пользователь авторизован
@@ -132,7 +139,17 @@ export const FederalPlanProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }, [plans]);
     
 
-    const value = { plans, loading, getPlanByDate, addPlan, updatePlan, deletePlan, refreshPlans };
+    const value = { 
+        plans, 
+        loading, 
+        getPlanByDate, 
+        addPlan, 
+        updatePlan, 
+        deletePlan, 
+        refreshPlans,
+        dateRange,
+        setDateRange
+    };
 
     return (
         <FederalPlanContext.Provider value={value}>

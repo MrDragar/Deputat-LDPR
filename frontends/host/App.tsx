@@ -1,5 +1,5 @@
 import React, {Suspense, useState, useEffect} from 'react';
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import {AuthProvider, useAuth} from './context/AuthContext';
 import { FederalPlanProvider } from './context/FederalPlanContext';
 import { AlertProvider } from './context/AlertContext';
@@ -22,11 +22,19 @@ const AutumnReport = React.lazy(() => import('reports/App'));
 const DashboardApp = React.lazy(() => import('dashboard/App'));
 const CongratsApp = React.lazy(() => import('congrats/App'));
 
+// Wrapper compoent to scope the Federal Plan Context
+const FederalPlanWrapper = () => {
+  return (
+    <FederalPlanProvider>
+      <Outlet />
+    </FederalPlanProvider>
+  );
+};
+
 const App: React.FC = () => {
   return (
     <HashRouter>
       <AuthProvider>
-        <FederalPlanProvider>
           <AlertProvider>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
@@ -38,23 +46,32 @@ const App: React.FC = () => {
                   </ProtectedRoute>
                 }
               >
-                <Route index element={<DashboardPage />} />
-                <Route 
-                  path="federal-plan/create" 
-                  element={
-                    <ProtectedRoute roles={['admin', 'employee']}>
-                      <FederalPlanCreatePage />
-                    </ProtectedRoute>
-                  } 
-                />
-                <Route 
-                  path="federal-plan/edit/:date" 
-                  element={
-                    <ProtectedRoute roles={['admin', 'employee']}>
-                      <FederalPlanEditPage />
-                    </ProtectedRoute>
-                  } 
-                />
+                {/* 
+                  Группируем маршруты Федерального плана под одним враппером.
+                  Когда мы находимся внутри этих маршрутов, состояние (дата, данные) сохраняется.
+                  Когда уходим (например, в /applications), провайдер размонтируется, 
+                  и состояние сбрасывается.
+                */}
+                <Route element={<FederalPlanWrapper />}>
+                  <Route index element={<DashboardPage />} />
+                  <Route 
+                    path="federal-plan/create" 
+                    element={
+                      <ProtectedRoute roles={['admin', 'employee']}>
+                        <FederalPlanCreatePage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="federal-plan/edit/:date" 
+                    element={
+                      <ProtectedRoute roles={['admin', 'employee']}>
+                        <FederalPlanEditPage />
+                      </ProtectedRoute>
+                    } 
+                  />
+                </Route>
+
                 <Route 
                   path="applications" 
                   element={
@@ -88,7 +105,7 @@ const App: React.FC = () => {
                   } 
                 />
                 <Route 
-                  path="reports" 
+                  path="reports/*" 
                   element={
                     <ProtectedRoute roles={['admin', 'coordinator', 'employee']}>
                       <ReportsPage />
@@ -138,7 +155,6 @@ const App: React.FC = () => {
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </AlertProvider>
-        </FederalPlanProvider>
       </AuthProvider>
     </HashRouter>
   );

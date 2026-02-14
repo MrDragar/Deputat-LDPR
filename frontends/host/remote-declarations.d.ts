@@ -1,14 +1,17 @@
 declare module 'reports/*' {
-  const content: any;
+  import { ComponentType } from 'react';
+  const content: ComponentType<any>;
   export default content;
 }
 
 declare module 'dashboard/*' {
-  const content: any;
+  import { ComponentType } from 'react';
+  const content: ComponentType<any>;
   export default content;
 }
 
 declare module 'congrats/*' {
-  const content: any;
+  import { ComponentType } from 'react';
+  const content: ComponentType<any>;
   export default content;
 }

@@ -8,10 +8,9 @@ import FilterTabs from '../components/federal-plan/FilterTabs';
 import HolidayList from '../components/federal-plan/HolidayList';
 import TextInput from '../components/ui/TextInput';
 import { DateRangePicker } from '../components/ui/DateRangePicker';
-import { DateRange } from 'react-day-picker';
 import { eachDayOfInterval, format, isSameDay } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
-import { Search, Calendar, Plus, Settings, Download, FileJson, FileText, File, ChevronDown, Loader2 } from 'lucide-react';
+import { Search, Calendar, Plus, Download, FileJson, FileText, File, ChevronDown, Loader2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useOutsideClick } from '../hooks/useOutsideClick';
 import { useAlert } from '../context/AlertContext';
@@ -20,9 +19,9 @@ import saveAs from 'file-saver';
 
 const FederalPlanPage: React.FC = () => {
   const { user } = useAuth();
-  const { plans, loading } = useFederalPlan();
+  // Теперь dateRange и setDateRange берем из контекста, что сохраняет состояние при переходах внутри scope
+  const { plans, loading, dateRange, setDateRange } = useFederalPlan();
   const { showAlert } = useAlert();
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: new Date(), to: undefined });
   const [activeFilter, setActiveFilter] = useState<PartyImage | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [isFabVisible, setIsFabVisible] = useState(true);
@@ -183,9 +182,13 @@ const FederalPlanPage: React.FC = () => {
                   }));
               } else {
                    docChildren.push(new Paragraph({
-                      text: "Нет праздников",
-                      italics: true,
-                      color: "718096", // Gray
+                      children: [
+                          new TextRun({
+                              text: "Нет праздников",
+                              italics: true,
+                              color: "718096" // Gray
+                          })
+                      ],
                       spacing: { after: 200 }
                   }));
               }
@@ -280,9 +283,13 @@ const FederalPlanPage: React.FC = () => {
                   }
               } else {
                    docChildren.push(new Paragraph({
-                      text: "Событий нет",
-                      italics: true,
-                      color: "718096",
+                      children: [
+                          new TextRun({
+                              text: "Событий нет",
+                              italics: true,
+                              color: "718096"
+                          })
+                      ],
                       spacing: { after: 200 }
                   }));
               }
@@ -501,7 +508,8 @@ const FederalPlanPage: React.FC = () => {
                                         })}
                                     </div>
                                 ) : (
-                                    <div className="mt-6 text-center py-10 bg-white rounded-lg border border-gray-200">
+                                    // Added px-6 to this container for better mobile padding
+                                    <div className="mt-6 text-center py-10 px-2 bg-white rounded-lg border border-gray-200">
                                         <NoEventsMessage />
                                     </div>
                                 )}
