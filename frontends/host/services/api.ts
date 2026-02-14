@@ -1,20 +1,21 @@
-import type { 
-    RegistrationForm, 
-    User,
-    ReportPeriod, 
-    Report,
-    RegionReport,
-    DeputyRecord,
-    ReportRecord,
-    AdminViewData,
-    CoordinatorViewData,
-    DeputyViewData
+import type {
+  RegistrationForm,
+  User,
+  ReportPeriod,
+  Report,
+  RegionReport,
+  DeputyRecord,
+  ReportRecord,
+  AdminViewData,
+  CoordinatorViewData,
+  DeputyViewData, DeputyLevel
 } from '../types';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
 
 const BASE_URL = 'https://депутатлдпр.рф';
 const REPORT_API_URL = `${BASE_URL}/api/auth/mouth_reports`;
+const FEDERAL_PLAN_URL = `${BASE_URL}/api/federal_plan/days`;
 
 const getAuthToken = (): string | null => {
   return localStorage.getItem('authToken');
@@ -245,11 +246,13 @@ export const api = {
     return await handleApiResponse(response);
   },
 
-  // --- Reporting API (Real) ---
-  
   // 1. Report Periods
   getReportPeriods: async (): Promise<ReportPeriod[]> => {
     const response = await fetch(`${REPORT_API_URL}/report-periods/`, { headers: getAuthHeaders() });
+    return handleApiResponse(response);
+  },
+  getReportPeriodById: async (id: number): Promise<ReportPeriod> => {
+    const response = await fetch(`${REPORT_API_URL}/report-periods/${id}/`, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
   createReportPeriod: async (data: Omit<ReportPeriod, 'id'>): Promise<ReportPeriod> => {
@@ -258,10 +261,6 @@ export const api = {
   },
   updateReportPeriod: async (id: number, data: Omit<ReportPeriod, 'id'>): Promise<ReportPeriod> => {
     const response = await fetch(`${REPORT_API_URL}/report-periods/${id}/`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
-    return handleApiResponse(response);
-  },
-  deleteReportPeriod: async (id: number): Promise<void> => {
-    const response = await fetch(`${REPORT_API_URL}/report-periods/${id}/`, { method: 'DELETE', headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
 
@@ -287,116 +286,110 @@ export const api = {
   // 3. Region Reports
   getRegionReports: async (): Promise<RegionReport[]> => {
     const response = await fetch(`${REPORT_API_URL}/region-reports/`, { headers: getAuthHeaders() });
-    // Assuming backend filters by user's region for coordinator or returns all for others
+    return handleApiResponse(response);
+  },
+  getRegionReportById: async (id: number): Promise<RegionReport> => {
+    const response = await fetch(`${REPORT_API_URL}/region-reports/${id}/`, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
 
   // 4. Deputy Records
   getDeputyRecords: async (regionReportId?: number): Promise<DeputyRecord[]> => {
     const url = regionReportId ? `${REPORT_API_URL}/deputy-records/?regionReport=${regionReportId}` : `${REPORT_API_URL}/deputy-records/`;
-    // Assuming backend filters by user for deputy role, or by region for coordinator role
     const response = await fetch(url, { headers: getAuthHeaders() });
+    return handleApiResponse(response);
+  },
+  getDeputyRecordById: async (id: number): Promise<DeputyRecord> => {
+    const response = await fetch(`${REPORT_API_URL}/deputy-records/${id}/`, { headers: getAuthHeaders() });
+    return handleApiResponse(response);
+  },
+  createDeputyRecord: async (data: { regionReport: number; fio: string; level: DeputyLevel; isAvailable: boolean; reason: string | null; deputy?: number | null }): Promise<DeputyRecord> => {
+    const response = await fetch(`${REPORT_API_URL}/deputy-records/`, { 
+        method: 'POST', 
+        headers: getAuthHeaders(), 
+        body: JSON.stringify(data) 
+    });
+    return handleApiResponse(response);
+  },
+  updateDeputyRecord: async (id: number, data: Partial<Omit<DeputyRecord, 'id'>>): Promise<DeputyRecord> => {
+    const response = await fetch(`${REPORT_API_URL}/deputy-records/${id}/`, { 
+        method: 'PATCH', 
+        headers: getAuthHeaders(), 
+        body: JSON.stringify(data) 
+    });
+    return handleApiResponse(response);
+  },
+  deleteDeputyRecord: async (id: number): Promise<void> => {
+    const response = await fetch(`${REPORT_API_URL}/deputy-records/${id}/`, { 
+        method: 'DELETE', 
+        headers: getAuthHeaders() 
+    });
     return handleApiResponse(response);
   },
   
   // 5. Report Records (Submissions)
   getReportRecords: async (): Promise<ReportRecord[]> => {
     const response = await fetch(`${REPORT_API_URL}/report-records/`, { headers: getAuthHeaders() });
-    // Assuming backend filters by user/region
-    return handleApiResponse(response);
-  },
-  createReportRecord: async (data: Omit<ReportRecord, 'id'>): Promise<ReportRecord> => {
-    const response = await fetch(`${REPORT_API_URL}/report-records/`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) });
     return handleApiResponse(response);
   },
   updateReportRecord: async (id: number, data: Omit<ReportRecord, 'id'>): Promise<ReportRecord> => {
     const response = await fetch(`${REPORT_API_URL}/report-records/${id}/`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
     return handleApiResponse(response);
   },
-  deleteReportRecord: async (id: number): Promise<void> => {
-    const response = await fetch(`${REPORT_API_URL}/report-records/${id}/`, { method: 'DELETE', headers: getAuthHeaders() });
-    return handleApiResponse(response);
-  },
 
-
-  // --- Composite API functions for Views ---
-  
+  // Helpers
   getAdminViewData: async (): Promise<AdminViewData> => {
-    const [periods, reports] = await Promise.all([
-      api.getReportPeriods(),
-      api.getReports()
-    ]);
-    
-    // Generate name for periods on frontend
-    const namedPeriods = periods.map(p => ({
-        ...p,
-        name: `${format(new Date(p.startDate), 'LLLL yyyy', { locale: ru })}`
-    })).sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
-    
+    const [periods, reports] = await Promise.all([ api.getReportPeriods(), api.getReports() ]);
+    const namedPeriods = periods.map(p => {
+        const s = new Date(p.startDate);
+        const e = new Date(p.endDate);
+        let name = format(s, 'LLLL yyyy', { locale: ru });
+        if (s.getMonth() !== e.getMonth()) {
+            name = `${format(s, 'LLLL', { locale: ru })}-${format(e, 'LLLL', { locale: ru })} ${format(e, 'yyyy', { locale: ru })}`;
+        }
+        return {
+            ...p,
+            name: name.charAt(0).toUpperCase() + name.slice(1)
+        }
+    }).sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
     return { periods: namedPeriods, reports };
   },
+
   
-  getCoordinatorViewData: async (userId: number): Promise<CoordinatorViewData> => {
-    const periods = await api.getReportPeriods();
-    const latestPeriod = periods.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
-    if (!latestPeriod) throw new APIError("Нет активных периодов.", 404);
-
-    const regionReports = await api.getRegionReports();
-    const currentRegionReport = regionReports.find(rr => rr.reportPeriod === latestPeriod.id);
-
-    const [reports, deputyRecords, reportRecords] = await Promise.all([
-        api.getReports(latestPeriod.id),
-        currentRegionReport ? api.getDeputyRecords(currentRegionReport.id) : Promise.resolve([] as DeputyRecord[]),
-        api.getReportRecords()
-    ]);
-
-    return {
-        period: {
-            ...latestPeriod,
-            name: `${format(new Date(latestPeriod.startDate), 'LLLL yyyy', { locale: ru })}`
-        },
-        reports,
-        deputyRecords,
-        reportRecords
-    };
+    // 6. Federal Plan (Days)
+  getFederalPlans: async (skip = 0, limit = 100): Promise<{ items: any[], total: number }> => {
+    const response = await fetch(`${FEDERAL_PLAN_URL}/?skip=${skip}&limit=${limit}`, { headers: getAuthHeaders() });
+    return await handleApiResponse(response);
   },
-  
-  getDeputyViewData: async (userId: number): Promise<DeputyViewData> => {
-     const periodsPromise = api.getReportPeriods();
-     const deputyRecordsPromise = api.getDeputyRecords();
-     const regionReportsPromise = api.getRegionReports();
-     const reportRecordsPromise = api.getReportRecords();
-
-     const [periods, allDeputyRecords, allRegionReports, reportRecords] = await Promise.all([
-         periodsPromise,
-         deputyRecordsPromise,
-         regionReportsPromise,
-         reportRecordsPromise,
-     ]);
-
-     const latestPeriod = periods.sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
-     if (!latestPeriod) throw new APIError("Нет активных периодов.", 404);
-     
-     const regionReportIdsForPeriod = new Set(
-         allRegionReports
-             .filter(rr => rr.reportPeriod === latestPeriod.id)
-             .map(rr => rr.id)
-     );
-     
-     const userDeputyRecordForPeriod = allDeputyRecords.find(dr => 
-        dr.deputy === userId && regionReportIdsForPeriod.has(dr.regionReport)
-     ) || null;
-
-     const reports = await api.getReports(latestPeriod.id);
-     
-     return {
-        period: {
-            ...latestPeriod,
-            name: `${format(new Date(latestPeriod.startDate), 'LLLL yyyy', { locale: ru })}`
-        },
-        reports,
-        deputyRecord: userDeputyRecordForPeriod,
-        reportRecords
-     }
+  getFederalPlanById: async (id: number): Promise<any> => {
+    const response = await fetch(`${FEDERAL_PLAN_URL}/${id}`, { headers: getAuthHeaders() });
+    return await handleApiResponse(response);
+  },
+  getFederalPlanByDate: async (date: string): Promise<any> => {
+    const response = await fetch(`${FEDERAL_PLAN_URL}/by-date/${date}`, { headers: getAuthHeaders() });
+    return await handleApiResponse(response);
+  },
+  createFederalPlan: async (data: any): Promise<any> => {
+    const response = await fetch(`${FEDERAL_PLAN_URL}/`, { 
+      method: 'POST', 
+      headers: getAuthHeaders(), 
+      body: JSON.stringify(data) 
+    });
+    return await handleApiResponse(response);
+  },
+  updateFederalPlan: async (id: number, data: any): Promise<any> => {
+    const response = await fetch(`${FEDERAL_PLAN_URL}/${id}`, { 
+      method: 'PUT', 
+      headers: getAuthHeaders(), 
+      body: JSON.stringify(data) 
+    });
+    return await handleApiResponse(response);
+  },
+  deleteFederalPlan: async (id: number): Promise<void> => {
+    const response = await fetch(`${FEDERAL_PLAN_URL}/${id}`, { 
+      method: 'DELETE', 
+      headers: getAuthHeaders() 
+    });
+    return await handleApiResponse(response);
   }
 };

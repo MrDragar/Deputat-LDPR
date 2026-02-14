@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
@@ -11,20 +12,21 @@ interface HolidayListProps {
   date: Date;
   showEdit?: boolean;
   dateString?: string;
+  id?: string;
 }
 
-const HolidayList: React.FC<HolidayListProps> = ({ holidays, date, showEdit = false, dateString }) => {
+const HolidayList: React.FC<HolidayListProps> = ({ holidays, date, showEdit = false, dateString, id }) => {
   const datePart = format(date, 'd MMMM', { locale: ru });
   const dayPart = format(date, 'EEEE', { locale: ru });
 
   return (
-    <div>
+    <div id={id}>
       <div className="flex justify-between items-center border-b border-gray-200 pb-4 mb-4">
         <h2 className="text-2xl font-bold text-gray-800">
           {datePart}, {dayPart.toLowerCase()}
         </h2>
         {showEdit && dateString && (
-          <Link to={`/federal-plan/edit/${dateString}`}>
+          <Link to={`/federal-plan/edit/${dateString}`} className="export-ignore">
             <IconButton
               icon={Settings}
               aria-label="Редактировать дату"

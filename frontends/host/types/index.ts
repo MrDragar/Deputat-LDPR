@@ -1,5 +1,3 @@
-
-
 export interface OtherLink {
   id: number;
   url: string;
@@ -114,15 +112,15 @@ export interface User {
   deputyForm: RegistrationForm | null;
 }
 
-
 // --- NEW Reporting System Types ---
 
 export interface ReportPeriod {
   id: number;
-  startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
-  // Frontend-generated property
+  startDate: string; 
+  endDate: string;
   name?: string; 
+  reports?: Report[]; // Вложенные отчеты (только в GET {id})
+  regionReports?: RegionReport[]; // Вложенные регионы (только в GET {id})
 }
 
 export type ReportTheme = 'infoudar' | 'vdpg' | 'event' | 'reg_event' | 'letter' | 'opt_event';
@@ -130,40 +128,42 @@ export type ReportTheme = 'infoudar' | 'vdpg' | 'event' | 'reg_event' | 'letter'
 export interface Report {
   id: number;
   reportPeriod: number;
-  startDate: string; // YYYY-MM-DD
-  endDate: string; // YYYY-MM-DD
+  startDate: string;
+  endDate: string;
   name: string;
   theme: ReportTheme;
   themeDisplay: string;
+  description?: string;
 }
 
 export interface RegionReport {
   id: number;
   regionName: string;
   reportPeriod: number;
+  deputiesRecords?: DeputyRecord[]; // Вложенные депутаты (только в GET {id})
 }
 
-export type DeputyLevel = 'MCU' | 'ACR' | 'ZS';
+export type DeputyLevel = 'МСУ' | 'АЦС' | 'ЗС';
 
 export interface DeputyRecord {
   id: number;
-  deputy: number;
+  deputy: number | null;
   regionReport: number;
   fio: string;
   isAvailable: boolean;
   level: DeputyLevel;
   levelDisplay: string;
   reason: string | null;
+  reportRecords?: ReportRecord[]; // Вложенные ссылки на отчеты (только в GET {id})
 }
 
 export interface ReportRecord {
   id: number;
   report: number;
   deputyRecord: number;
-  link: string | null; // Can be null for auto-generated empty records
+  link: string | null;
 }
 
-// Composite types for view data
 export interface AdminViewData {
   periods: ReportPeriod[];
   reports: Report[];

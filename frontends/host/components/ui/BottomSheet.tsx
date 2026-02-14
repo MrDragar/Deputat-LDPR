@@ -10,6 +10,7 @@ interface BottomSheetProps {
     children: React.ReactNode;
     confirmButtonText?: string;
     confirmButtonVariant?: 'danger' | 'primary' | 'success';
+    icon?: React.ElementType;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({ 
@@ -19,7 +20,8 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
     title, 
     children,
     confirmButtonText = 'Подтвердить',
-    confirmButtonVariant = 'primary'
+    confirmButtonVariant = 'primary',
+    icon
 }) => {
     const sheetRef = useRef<HTMLDivElement>(null);
     const portalRoot = typeof document !== 'undefined' ? document.getElementById('root') : null;
@@ -51,24 +53,25 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
 
     const variantStyles = {
         primary: {
-            Icon: CheckCircle,
+            DefaultIcon: CheckCircle,
             iconBg: 'bg-blue-600',
             buttonClasses: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
         },
         success: {
-            Icon: CheckCircle,
+            DefaultIcon: CheckCircle,
             iconBg: 'bg-green-600',
             buttonClasses: 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500',
         },
         danger: {
-            Icon: AlertTriangle,
+            DefaultIcon: AlertTriangle,
             iconBg: 'bg-red-600',
             buttonClasses: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500',
         },
     };
 
     const currentVariant = variantStyles[confirmButtonVariant || 'primary'];
-    const { Icon, iconBg, buttonClasses } = currentVariant;
+    const { DefaultIcon, iconBg, buttonClasses } = currentVariant;
+    const IconToRender = icon || DefaultIcon;
 
     const sheetContent = (
         <div
@@ -94,7 +97,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
                     
                     <div className="text-center">
                         <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${iconBg}`}>
-                            <Icon className="h-6 w-6 text-white" aria-hidden="true" />
+                            <IconToRender className="h-6 w-6 text-white" aria-hidden="true" />
                         </div>
                         <div className="mt-3">
                             <h2 id="sheet-title" className="text-xl font-bold text-gray-900">{title}</h2>

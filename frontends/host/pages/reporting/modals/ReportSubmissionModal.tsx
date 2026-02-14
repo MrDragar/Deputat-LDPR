@@ -1,28 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Link as LinkIcon } from 'lucide-react';
-import { api } from '../../../services/api';
 import TextInput from '../../../components/ui/TextInput';
-import { useAlert } from '../../../context/AlertContext';
-import type { ReportRecord } from '../../../types';
 
 interface ReportSubmissionModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSuccess: (record: ReportRecord) => void;
+    onSuccess: (link: string) => void;
     submissionData: {
         deputyRecordId: number;
         reportId: number;
-        recordId?: number; // for editing
+        recordId?: number; 
         link?: string;
     };
 }
 
 const ReportSubmissionModal: React.FC<ReportSubmissionModalProps> = ({ isOpen, onClose, onSuccess, submissionData }) => {
     const [link, setLink] = useState('');
-    const [isSaving, setIsSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const { showAlert } = useAlert();
     const portalRoot = document.getElementById('root');
 
     useEffect(() => {
@@ -51,32 +46,9 @@ const ReportSubmissionModal: React.FC<ReportSubmissionModalProps> = ({ isOpen, o
         }
     };
 
-    const handleSave = async () => {
+    const handleNext = () => {
         if (!validateUrl(link)) return;
-        setIsSaving(true);
-        try {
-            const recordData = {
-                report: submissionData.reportId,
-                deputyRecord: submissionData.deputyRecordId,
-                link,
-            };
-
-            let result: ReportRecord;
-            if (submissionData.recordId) {
-                // Editing existing record
-                result = await api.updateReportRecord(submissionData.recordId, recordData);
-            } else {
-                // Creating new record
-                result = await api.createReportRecord(recordData);
-            }
-
-            showAlert('success', 'Успешно', 'Отчёт сохранен.');
-            onSuccess(result);
-        } catch (apiError) {
-             showAlert('error', 'Ошибка', 'Не удалось сохранить отчёт.');
-        } finally {
-            setIsSaving(false);
-        }
+        onSuccess(link);
     };
 
     if (!isOpen || !portalRoot) return null;
@@ -107,8 +79,8 @@ const ReportSubmissionModal: React.FC<ReportSubmissionModalProps> = ({ isOpen, o
                 </main>
                 <footer className="flex justify-end gap-4 p-4 sm:p-6 bg-slate-50 border-t rounded-b-xl">
                     <button onClick={onClose} className="px-6 py-2.5 text-base font-semibold rounded-lg bg-white text-gray-700 border border-gray-300 hover:bg-gray-50">Отмена</button>
-                    <button onClick={handleSave} disabled={isSaving} className="px-6 py-2.5 text-base font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:bg-blue-300">
-                        {isSaving ? 'Отправка...' : 'Отправить'}
+                    <button onClick={handleNext} className="px-6 py-2.5 text-base font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+                        Далее
                     </button>
                 </footer>
             </div>

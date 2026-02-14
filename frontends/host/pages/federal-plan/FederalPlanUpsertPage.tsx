@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
 import { useFederalPlan } from '../../context/FederalPlanContext';
 // FIX: `parse` is imported from its subpath in date-fns v2+.
 import { format } from 'date-fns';
 import parse from 'date-fns/parse';
 import { ru } from 'date-fns/locale/ru';
-import type { DailyPlan, PlanEvent, EventCategory, EventTheme } from '../../data/federalPlanData';
-import { eventCategoryOptions, eventThemeOptions, eventCategoryConfig } from '../../data/federalPlanData';
+import type { DailyPlan, PlanEvent, PartyImage } from '../../data/federalPlanData';
+import { partyImageOptions, partyImageConfig } from '../../data/federalPlanData';
 import TextInput from '../../components/ui/TextInput';
 import Select from '../../components/ui/Select';
 import Switch from '../../components/ui/Switch';
@@ -16,7 +16,7 @@ import SingleDateCalendarModal from '../../components/federal-plan/SingleDateCal
 import HolidayInput from '../../components/ui/HolidayInput';
 import JsonImportModal from '../../components/federal-plan/JsonImportModal';
 import { useAlert } from '../../context/AlertContext';
-import { ArrowLeft, Plus, Trash2, Calendar as CalendarIcon, Save, FileJson2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Calendar as CalendarIcon, Save, FileJson2, Loader2 } from 'lucide-react';
 
 type UpsertMode = 'create' | 'edit';
 
@@ -26,10 +26,9 @@ interface Detail {
   value: string;
 }
 
-interface EventState extends Omit<PlanEvent, 'details' | 'category' | 'theme'> {
+interface EventState extends Omit<PlanEvent, 'details' | 'partyImage'> {
   details: Detail[];
-  category: EventCategory | '';
-  theme: EventTheme | '';
+  partyImage: PartyImage | '';
 }
 
 const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
@@ -44,9 +43,9 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
   const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
   const [isCalendarOpen, setCalendarOpen] = useState(false);
   const [isJsonModalOpen, setJsonModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   
-  const categoryOptionsWithPlaceholder = useMemo(() => [{ value: '', label: 'Выберите категорию...' }, ...eventCategoryOptions], []);
-  const themeOptionsWithPlaceholder = useMemo(() => [{ value: '', label: 'Выберите тему...' }, ...eventThemeOptions], []);
+  const partyImageOptionsWithPlaceholder = useMemo(() => [{ value: '', label: 'Выберите образ...' }, ...partyImageOptions], []);
 
   const existingDates = useMemo(() => {
     return plans
@@ -63,10 +62,10 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
             details: Object.entries(e.details).map(([key, value], i) => ({ id: Date.now() + i, key, value: value || '' }))
         }));
 
-        const categoryOrder = Object.keys(eventCategoryConfig);
+        const imageOrder = Object.keys(partyImageConfig);
         mappedEvents.sort((a, b) => {
-            const indexA = a.category ? categoryOrder.indexOf(a.category) : categoryOrder.length;
-            const indexB = b.category ? categoryOrder.indexOf(b.category) : categoryOrder.length;
+            const indexA = a.partyImage ? imageOrder.indexOf(a.partyImage) : imageOrder.length;
+            const indexB = b.partyImage ? imageOrder.indexOf(b.partyImage) : imageOrder.length;
             return indexA - indexB;
         });
 
@@ -100,8 +99,7 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
     const mappedEvents: EventState[] = plan.events.map((e, eventIndex) => ({
       ...e,
       id: Date.now() + eventIndex, // Ensure unique client-side ID
-      category: e.category || '', // Handle potential empty values from JSON
-      theme: e.theme || '',
+      partyImage: e.partyImage || '',
       details: Object.entries(e.details).map(([key, value], detailIndex) => ({
         id: Date.now() + eventIndex * 1000 + detailIndex, // Ensure unique client-side ID
         key,
@@ -139,8 +137,7 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
         const newEvent: EventState = {
             id: Date.now(),
             title: '',
-            category: '',
-            theme: '',
+            partyImage: '',
             isInfostrike: false,
             details: [],
         };
@@ -161,11 +158,8 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
             events: formData.events.map(e => e.id === eventId ? { ...e, [field]: value } : e)
         });
         
-        if (field === 'category' && errors[`event-category-${eventId}`]) {
-            setErrors(prev => ({ ...prev, [`event-category-${eventId}`]: '' }));
-        }
-        if (field === 'theme' && errors[`event-theme-${eventId}`]) {
-            setErrors(prev => ({ ...prev, [`event-theme-${eventId}`]: '' }));
+        if (field === 'partyImage' && errors[`event-image-${eventId}`]) {
+            setErrors(prev => ({ ...prev, [`event-image-${eventId}`]: '' }));
         }
     }
   };
@@ -198,7 +192,7 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
     }
   };
   
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData) return;
 
     const newErrors: Record<string, string> = {};
@@ -207,11 +201,8 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
     }
     
     formData.events.forEach(event => {
-        if (!event.category) {
-          newErrors[`event-category-${event.id}`] = "Категория обязательна.";
-        }
-        if (!event.theme) {
-          newErrors[`event-theme-${event.id}`] = "Тема обязательна.";
+        if (!event.partyImage) {
+          newErrors[`event-image-${event.id}`] = "Образ партии обязателен.";
         }
     });
 
@@ -222,10 +213,10 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
       return;
     }
 
-    const categoryOrder = Object.keys(eventCategoryConfig);
+    const imageOrder = Object.keys(partyImageConfig);
     const sortedEventsToSave = [...formData.events].sort((a, b) => {
-        const indexA = a.category ? categoryOrder.indexOf(a.category) : categoryOrder.length;
-        const indexB = b.category ? categoryOrder.indexOf(b.category) : categoryOrder.length;
+        const indexA = a.partyImage ? imageOrder.indexOf(a.partyImage) : imageOrder.length;
+        const indexB = b.partyImage ? imageOrder.indexOf(b.partyImage) : imageOrder.length;
         return indexA - indexB;
     });
 
@@ -241,19 +232,37 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
       })) as PlanEvent[] // Cast to final type
     };
     
-    if (mode === 'create') {
-        addPlan(finalPlan);
-    } else {
-        updatePlan(finalPlan);
+    setIsSaving(true);
+    try {
+        if (mode === 'create') {
+            await addPlan(finalPlan);
+            showAlert('success', 'Готово', 'Новая дата добавлена в федеральный план.');
+        } else {
+            await updatePlan(finalPlan);
+            showAlert('success', 'Готово', 'Изменения успешно сохранены.');
+        }
+        navigate('/');
+    } catch (error) {
+        console.error(error);
+        showAlert('error', 'Ошибка сохранения', 'Не удалось сохранить данные на сервер. Пожалуйста, попробуйте позже.');
+    } finally {
+        setIsSaving(false);
     }
-    navigate('/');
   };
 
-  const handleDeleteDate = () => {
+  const handleDeleteDate = async () => {
     if(dateParam) {
-        deletePlan(dateParam);
-        setDeleteModalOpen(false);
-        navigate('/');
+        setIsSaving(true);
+        try {
+            await deletePlan(dateParam);
+            setDeleteModalOpen(false);
+            showAlert('success', 'Удалено', 'Запись удалена из федерального плана.');
+            navigate('/');
+        } catch (error) {
+            showAlert('error', 'Ошибка', 'Не удалось удалить запись. Попробуйте позже.');
+        } finally {
+            setIsSaving(false);
+        }
     }
   };
   
@@ -331,17 +340,17 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
                 <h2 className="font-semibold text-lg text-gray-800 mb-4">События</h2>
                 <div className="space-y-6">
                     {formData.events.map((event, index) => {
-                        const categoryConfig = event.category ? eventCategoryConfig[event.category] : null;
-                        const isCategorySelected = !!categoryConfig;
+                        const imageConfig = event.partyImage ? partyImageConfig[event.partyImage] : null;
+                        const isImageSelected = !!imageConfig;
 
                         return (
                             <div key={event.id} className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-                                <div className={`flex justify-between items-center p-4 transition-colors duration-300 ${isCategorySelected ? categoryConfig.colors.bg : 'bg-slate-50 border-b'}`}>
-                                    <h3 className={`text-lg font-bold ${isCategorySelected ? 'text-white' : 'text-gray-800'}`}>Событие #{index + 1}</h3>
+                                <div className={`flex justify-between items-center p-4 transition-colors duration-300 ${isImageSelected ? imageConfig.colors.bg : 'bg-slate-50 border-b'}`}>
+                                    <h3 className={`text-lg font-bold ${isImageSelected ? 'text-white' : 'text-gray-800'}`}>Событие #{index + 1}</h3>
                                     <IconButton
                                         icon={Trash2}
                                         onClick={() => removeEvent(event.id)}
-                                        className={isCategorySelected ? 'text-white/70 hover:bg-white/20 hover:text-white' : 'text-red-600 hover:bg-red-100'}
+                                        className={isImageSelected ? 'text-white/70 hover:bg-white/20 hover:text-white' : 'text-red-600 hover:bg-red-100'}
                                         aria-label="Удалить событие"
                                     />
                                 </div>
@@ -349,8 +358,17 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
                                 <div className="p-6">
                                     <div className="grid grid-cols-1 gap-y-6">
                                         <TextInput name="title" label="Название события" value={event.title} onChange={(_, val) => handleEventChange(event.id, 'title', val)} />
-                                        <Select name="category" label="Категория" options={categoryOptionsWithPlaceholder} value={event.category} onChange={(_, val) => handleEventChange(event.id, 'category', val as EventCategory)} required error={errors[`event-category-${event.id}`]} />
-                                        <Select name="theme" label="Тема" options={themeOptionsWithPlaceholder} value={event.theme} onChange={(_, val) => handleEventChange(event.id, 'theme', val as EventTheme)} required error={errors[`event-theme-${event.id}`]} />
+                                        
+                                        <Select 
+                                            name="partyImage" 
+                                            label="Образ партии" 
+                                            options={partyImageOptionsWithPlaceholder} 
+                                            value={event.partyImage} 
+                                            onChange={(_, val) => handleEventChange(event.id, 'partyImage', val as PartyImage)} 
+                                            required 
+                                            error={errors[`event-image-${event.id}`]} 
+                                        />
+                                        
                                         <div>
                                             <Switch id={`infostrike-${event.id}`} label="Инфоудар" checked={event.isInfostrike} onChange={val => handleEventChange(event.id, 'isInfostrike', val)} />
                                         </div>
@@ -397,16 +415,18 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
               <button 
                   type="button"
                   onClick={handleSave} 
-                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 order-1 sm:order-2"
+                  disabled={isSaving}
+                  className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-md bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 order-1 sm:order-2 disabled:bg-blue-300"
               >
-                  <Save className="h-5 w-5" />
-                  <span>Сохранить изменения</span>
+                  {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+                  <span>{isSaving ? 'Сохранение...' : 'Сохранить изменения'}</span>
               </button>
               {mode === 'edit' && (
                   <button 
                       type="button"
                       onClick={() => setDeleteModalOpen(true)} 
-                      className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-md bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 order-2 sm:order-1"
+                      disabled={isSaving}
+                      className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-md bg-red-600 text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 order-2 sm:order-1 disabled:bg-red-300"
                   >
                       <Trash2 className="h-5 w-5" />
                       <span>Удалить дату</span>
@@ -428,7 +448,7 @@ const FederalPlanUpsertPage: React.FC<{ mode: UpsertMode }> = ({ mode }) => {
         onConfirm={handleDeleteDate}
         title="Удалить дату?"
         confirmButtonVariant="danger"
-        confirmButtonText="Удалить"
+        confirmButtonText={isSaving ? "Удаление..." : "Удалить"}
       >
         Вы уверены, что хотите удалить эту дату и все связанные с ней события? Это действие необратимо.
       </ConfirmationModal>

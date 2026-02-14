@@ -1,6 +1,7 @@
+
 import React from 'react';
 import type { PlanEvent } from '../../data/federalPlanData';
-import { eventCategoryConfig } from '../../data/federalPlanData';
+import { partyImageConfig } from '../../data/federalPlanData';
 import { Zap } from 'lucide-react';
 
 interface EventCardProps {
@@ -17,7 +18,7 @@ const DetailItem: React.FC<{ label: string; value: string }> = ({ label, value }
 };
 
 const EventCard: React.FC<EventCardProps> = ({ event }) => {
-  const { colors: style } = eventCategoryConfig[event.category];
+  const { colors: style, label } = partyImageConfig[event.partyImage];
   const detailsToShow = Object.entries(event.details)
     .filter(([, value]) => !!value);
 
@@ -26,9 +27,9 @@ const EventCard: React.FC<EventCardProps> = ({ event }) => {
       <div className={`p-4 ${style.bg} text-white flex flex-col`}>
         <div className="flex-grow">
             <div className="flex justify-between items-start gap-2">
-                <p className="text-xs font-bold uppercase tracking-wider opacity-80">{event.theme}</p>
+                <p className="text-xs font-bold uppercase tracking-wider opacity-80">{label}</p>
                 {event.isInfostrike && (
-                    <div className={`flex-shrink-0 flex items-center gap-1 bg-white ${style.text} text-xs font-bold px-2 py-0.5 rounded-full`}>
+                    <div className={`flex-shrink-0 flex items-center gap-1 bg-white ${style.text} text-xs font-bold px-2 py-0.5 rounded-full -mt-0.5`}>
                         <Zap className="h-3 w-3" />
                         <span>ИНФОУДАР</span>
                     </div>

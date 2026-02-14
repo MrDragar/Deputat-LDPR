@@ -1,216 +1,374 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import type { DeputyViewData, ReportRecord, ReportTheme } from '../../types';
-import { Plus, Link as LinkIcon, Edit, Trash2, Inbox } from 'lucide-react';
+import type { ReportPeriod, Report, ReportRecord, DeputyRecord, User as UserType, ReportTheme } from '../../types';
+import { 
+  Link as LinkIcon, Edit, Trash2, Inbox, 
+  ChevronDown, ChevronUp, Calendar, AlertCircle, Plus, Loader2,
+  Zap, Flag, MessageSquare, LayoutGrid
+} from 'lucide-react';
 import IconButton from '../../components/ui/IconButton';
 import ReportSubmissionModal from './modals/ReportSubmissionModal';
 import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { useAlert } from '../../context/AlertContext';
 import DeputyReportsSkeleton from '../../components/skeletons/DeputyReportsSkeleton';
+import { format, isAfter, parseISO } from 'date-fns';
+import { ru } from 'date-fns/locale/ru';
+
+interface PeriodState {
+    reports: Report[];
+    myRecord: DeputyRecord | null;
+    loading: boolean;
+    error: boolean;
+}
 
 const DeputyReportsView: React.FC = () => {
     const { user } = useAuth();
-    const [data, setData] = useState<DeputyViewData | null>(null);
-    const [loading, setLoading] = useState(true);
     const { showAlert } = useAlert();
+    
+    const [loading, setLoading] = useState(true);
+    const [periods, setPeriods] = useState<ReportPeriod[]>([]);
+    const [periodsData, setPeriodsData] = useState<Record<number, PeriodState>>({});
+    const [expandedPeriods, setExpandedPeriods] = useState<Set<number>>(new Set());
+    const [deputyProfile, setDeputyProfile] = useState<UserType | null>(null);
 
-    const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false);
-    const [editingSubmission, setEditingSubmission] = useState<{ deputyRecordId: number, reportId: number, recordId?: number, link?: string } | null>(null);
-    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [recordToDelete, setRecordToDelete] = useState<ReportRecord | null>(null);
+    const initPage = useCallback(async () => {
+        try {
+            setLoading(true);
+            const [p, profile] = await Promise.all([
+                api.getReportPeriods(),
+                user?.user_id ? api.getUserById(user.user_id) : Promise.resolve(null)
+            ]);
+            
+            setDeputyProfile(profile);
 
+            const sorted = p.map(item => ({
+                ...item,
+                name: item.name || format(parseISO(item.startDate), 'LLLL yyyy', { locale: ru })
+            })).sort((a, b) => parseISO(b.endDate).getTime() - parseISO(a.endDate).getTime());
+            
+            setPeriods(sorted);
 
-    const fetchData = useCallback(async () => {
-        if (user) {
-            try {
-                setLoading(true);
-                const responseData = await api.getDeputyViewData(user.user_id);
-                setData(responseData);
-            } catch (error) {
-                 showAlert('error', 'Ошибка', 'Не удалось загрузить данные отчётности.');
-            } finally {
-                setLoading(false);
+            if (sorted.length > 0) {
+                const now = new Date();
+                const active = sorted.find(p => isAfter(parseISO(p.endDate), now)) || sorted[0];
+                togglePeriod(active.id, profile?.deputyForm?.region);
             }
+        } catch (error) {
+            showAlert('error', 'Ошибка', 'Не удалось загрузить периоды.');
+        } finally {
+            setLoading(false);
         }
     }, [user, showAlert]);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    useEffect(() => { initPage(); }, [initPage]);
 
-    const getSubmissions = (reportId: number): ReportRecord[] => {
-        if (!data?.deputyRecord) return [];
-        return data.reportRecords.filter(s => s.report === reportId && s.deputyRecord === data.deputyRecord!.id);
+    const fetchPeriodDetails = async (periodId: number, forcedRegionName?: string) => {
+        if (periodsData[periodId]?.loading || (periodsData[periodId] && !periodsData[periodId].error)) return;
+
+        setPeriodsData(prev => ({
+            ...prev,
+            [periodId]: { reports: [], myRecord: null, loading: true, error: false }
+        }));
+
+        try {
+            const periodDetail = await api.getReportPeriodById(periodId);
+            const myRegionName = (forcedRegionName || deputyProfile?.deputyForm?.region || '').trim();
+            const myRegionEntry = periodDetail.regionReports?.find(rr => 
+                rr.regionName.trim().toLowerCase() === myRegionName.toLowerCase()
+            );
+
+            let myFullRecord: DeputyRecord | null = null;
+            if (myRegionEntry) {
+                const regionDetail = await api.getRegionReportById(myRegionEntry.id);
+                const myBriefRecord = regionDetail.deputiesRecords?.find(dr => 
+                    Number(dr.deputy) === Number(user?.user_id)
+                );
+                if (myBriefRecord) {
+                    myFullRecord = await api.getDeputyRecordById(myBriefRecord.id);
+                }
+            }
+
+            setPeriodsData(prev => ({
+                ...prev,
+                [periodId]: { 
+                    reports: periodDetail.reports || [], 
+                    myRecord: myFullRecord, 
+                    loading: false,
+                    error: false
+                }
+            }));
+        } catch (error) {
+            setPeriodsData(prev => ({
+                ...prev,
+                [periodId]: { ...prev[periodId], loading: false, error: true }
+            }));
+            showAlert('error', 'Ошибка', 'Не удалось загрузить данные по отчетам.');
+        }
     };
 
-    // Modal Handlers
-    const handleOpenSubmissionModal = (reportId: number, submission?: ReportRecord) => {
-        if (!data?.deputyRecord) return;
-        setEditingSubmission({ 
-            deputyRecordId: data.deputyRecord.id, 
-            reportId, 
-            link: submission?.link || undefined,
-            recordId: submission?.id
+    const togglePeriod = (id: number, forcedRegionName?: string) => {
+        const newSet = new Set(expandedPeriods);
+        if (newSet.has(id)) {
+            newSet.delete(id);
+        } else {
+            newSet.add(id);
+            fetchPeriodDetails(id, forcedRegionName);
+        }
+        setExpandedPeriods(newSet);
+    };
+
+    const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false);
+    const [pendingSubmission, setPendingSubmission] = useState<{ deputyRecordId: number, reportId: number, recordId: number, periodId: number, link?: string } | null>(null);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [confirmData, setConfirmData] = useState<{ link: string } | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSubmission = (pId: number, drId: number, rId: number, recId: number, link?: string | null) => {
+        setPendingSubmission({ 
+            periodId: pId, 
+            deputyRecordId: drId, 
+            reportId: rId, 
+            recordId: recId, 
+            link: link || '' 
         });
         setIsSubmissionModalOpen(true);
     };
 
-    const handleSubmissionSuccess = (record: ReportRecord) => {
+    const handleModalSuccess = (link: string) => {
         setIsSubmissionModalOpen(false);
-        setData(prev => {
-            if (!prev) return null;
-            const isEdit = prev.reportRecords.some(r => r.id === record.id);
-            let newRecords;
-            if (isEdit) {
-                newRecords = prev.reportRecords.map(r => r.id === record.id ? record : r);
-            } else {
-                newRecords = [...prev.reportRecords, record];
-            }
-            return { ...prev, reportRecords: newRecords };
-        });
+        setConfirmData({ link });
+        setIsConfirmModalOpen(true);
     };
 
-    const handleOpenDeleteModal = (record: ReportRecord) => {
-        setRecordToDelete(record);
-        setIsDeleteModalOpen(true);
-    };
-
-    const handleDelete = async () => {
-        if (!recordToDelete) return;
+    const handleFinalConfirm = async () => {
+        if (!pendingSubmission || !confirmData) return;
+        setIsSaving(true);
         try {
-            await api.deleteReportRecord(recordToDelete.id);
-            showAlert('success', 'Успешно', 'Ваш отчёт удалён.');
-            
-            setData(prev => {
-                if (!prev) return null;
+            const result = await api.updateReportRecord(pendingSubmission.recordId, {
+                report: pendingSubmission.reportId,
+                deputyRecord: pendingSubmission.deputyRecordId,
+                link: confirmData.link
+            });
+
+            setPeriodsData(prev => {
+                const pData = prev[pendingSubmission.periodId];
+                if (!pData || !pData.myRecord) return prev;
                 return {
                     ...prev,
-                    reportRecords: prev.reportRecords.filter(r => r.id !== recordToDelete.id)
+                    [pendingSubmission.periodId]: {
+                        ...pData,
+                        myRecord: {
+                            ...pData.myRecord,
+                            reportRecords: pData.myRecord.reportRecords?.map(rr => 
+                                rr.id === result.id ? result : rr
+                            )
+                        }
+                    }
                 };
             });
-        } catch (error) {
-            showAlert('error', 'Ошибка', 'Не удалось удалить отчёт.');
+            showAlert('success', 'Успешно', 'Отчет сохранен.');
+        } catch {
+            showAlert('error', 'Ошибка', 'Не удалось сохранить.');
         } finally {
-            setIsDeleteModalOpen(false);
-            setRecordToDelete(null);
+            setIsSaving(false);
+            setIsConfirmModalOpen(false);
+            setPendingSubmission(null);
+            setConfirmData(null);
         }
     };
 
-    if (loading || !data) {
-        return <DeputyReportsSkeleton />;
-    }
-    
-     if (data.reports.length === 0) {
+    const renderReportGroup = (
+        title: string, 
+        icon: React.ElementType, 
+        reports: Report[], 
+        myRecord: DeputyRecord | null, 
+        periodId: number,
+        showDates: boolean = true
+    ) => {
+        if (reports.length === 0) return null;
+
         return (
-            <div className="text-center p-12 bg-white rounded-xl border border-gray-200 shadow-sm">
-                <Inbox className="h-16 w-16 text-gray-300 mx-auto" />
-                <h1 className="text-2xl font-bold text-gray-900 mt-6 mb-2">Нет заданий</h1>
-                <p className="text-gray-600">На текущий отчётный период ({data.period.name}) не назначено обязательных отчётов.</p>
-                 <p className="text-sm text-gray-500 mt-4">Если вы считаете, что это ошибка, обратитесь к вашему координатору.</p>
-            </div>
-        );
-    }
-
-    return (
-        <>
-            <div className="space-y-6">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Моя отчётность</h1>
-                    <p className="mt-1 text-gray-500">Период: <span className="font-semibold">{data.period.name}</span></p>
+            <div className="space-y-4">
+                <div className="flex items-center gap-2.5 px-1">
+                    <div className="p-1.5 bg-slate-100 text-slate-500 rounded-lg">
+                        {React.createElement(icon, { size: 18 })}
+                    </div>
+                    <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wider">{title}</h4>
+                    <div className="h-px flex-1 bg-gray-100 ml-2"></div>
                 </div>
-                
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-                    <ul className="divide-y divide-gray-200">
-                        {data.reports.map(report => {
-                            const submissions = getSubmissions(report.id);
-                            // Auto-created records from server have null links
-                            const emptySubmission = submissions.find(s => !s.link);
-                            const completedSubmissions = submissions.filter(s => s.link);
-                            
-                            const isMultiSubmission = (['event', 'opt_event'] as ReportTheme[]).includes(report.theme);
 
-                            return (
-                                <li key={report.id} className="p-6 flex flex-col gap-4">
-                                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2">
-                                                <p className="font-semibold text-lg text-gray-800">{report.name}</p>
-                                                {report.theme === 'opt_event' && (
-                                                    <span className="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded-full">Опционально</span>
-                                                )}
-                                            </div>
-                                            <p className="text-sm text-gray-600 mt-1">{report.themeDisplay}</p>
+                <div className="grid grid-cols-1 gap-4">
+                    {reports.map(report => {
+                        const submissions = myRecord?.reportRecords?.filter(rr => rr.report === report.id) || [];
+                        if (submissions.length === 0) return null;
+
+                        return (
+                            <div key={report.id} className="space-y-2">
+                                {/* Заголовок конкретного отчета (только если есть даты или это не серийное мероприятие) */}
+                                {showDates && (
+                                    <div className="px-1 mb-1">
+                                        <div className="flex justify-between items-end">
+                                            <p className="text-xs font-bold text-gray-600">{report.name}</p>
+                                            <p className="text-[10px] text-gray-400 font-bold">
+                                                Срок: {format(parseISO(report.startDate), 'dd.MM')} — {format(parseISO(report.endDate), 'dd.MM')}
+                                            </p>
                                         </div>
+                                        {report.description && (
+                                            <p className="text-[11px] text-slate-400 mt-1 leading-relaxed italic">
+                                                {report.description}
+                                            </p>
+                                        )}
                                     </div>
+                                )}
 
-                                    {/* List of submitted reports */}
-                                    {completedSubmissions.length > 0 && (
-                                        <div className="flex flex-col gap-2 w-full">
-                                            {completedSubmissions.map((submission, idx) => (
-                                                <div key={submission.id} className="flex items-center justify-between gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg group animate-in fade-in slide-in-from-top-2 duration-200">
-                                                    <a href={submission.link!} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-blue-600 hover:underline font-semibold text-sm truncate max-w-[70%]">
-                                                        <LinkIcon size={14} />
-                                                        <span className="truncate">{submission.link}</span>
-                                                    </a>
-                                                    <div className="flex items-center gap-1">
-                                                        <IconButton icon={Edit} aria-label="Изменить ссылку" onClick={() => handleOpenSubmissionModal(report.id, submission)} className="text-gray-500 hover:bg-gray-200 h-8 w-8" />
-                                                        <IconButton icon={Trash2} aria-label="Удалить отчет" onClick={() => handleOpenDeleteModal(submission)} className="text-red-500 hover:bg-red-100 h-8 w-8" />
+                                {submissions.map((rec, idx) => (
+                                    <div key={rec.id} className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex justify-between items-center transition-all hover:border-blue-200 hover:bg-white group/slot shadow-sm">
+                                        <div className="flex-1 min-w-0 pr-4">
+                                            {!showDates ? (
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 ${rec.link ? 'bg-green-50 border-green-200 text-green-600' : 'bg-white border-slate-200 text-slate-400'}`}>
+                                                        {idx + 1}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 leading-tight">
+                                                            {report.themeDisplay}{submissions.length > 1 ? ` №${idx + 1}` : ''}
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-400 font-medium">Ссылка на проведенное мероприятие</p>
                                                     </div>
                                                 </div>
-                                            ))}
+                                            ) : (
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`w-2 h-2 rounded-full ${rec.link ? 'bg-green-500' : 'bg-slate-300 animate-pulse'}`}></div>
+                                                    <p className="text-sm font-bold text-gray-700 truncate">
+                                                        {submissions.length > 1 ? `Слот №${idx + 1}` : 'Загрузить отчет'}
+                                                    </p>
+                                                </div>
+                                            )}
                                         </div>
-                                    )}
-
-                                    {/* Actions: Fill empty or Add new */}
-                                    <div className="flex-shrink-0 w-full sm:w-auto">
-                                        {emptySubmission ? (
-                                             <button onClick={() => handleOpenSubmissionModal(report.id, emptySubmission)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-base font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-sm">
-                                                <Plus className="h-5 w-5" />
-                                                <span>Отправить отчёт</span>
-                                            </button>
-                                        ) : (
-                                            isMultiSubmission && (
-                                                <button onClick={() => handleOpenSubmissionModal(report.id)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
-                                                    <Plus className="h-4 w-4" />
-                                                    <span>Добавить ещё отчёт</span>
+                                        
+                                        <div className="flex items-center gap-2">
+                                            {rec.link ? (
+                                                <div className="flex items-center gap-1.5">
+                                                    <a href={rec.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 rounded-lg text-xs font-bold border border-green-200 hover:bg-green-100 transition-colors">
+                                                        <LinkIcon size={14} /> Посмотреть
+                                                    </a>
+                                                    <IconButton icon={Edit} onClick={() => handleSubmission(periodId, myRecord!.id, report.id, rec.id, rec.link)} className="h-9 w-9 text-slate-400 hover:text-blue-600 hover:bg-blue-50" />
+                                                </div>
+                                            ) : (
+                                                <button onClick={() => handleSubmission(periodId, myRecord!.id, report.id, rec.id)} className="flex items-center gap-2 px-5 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold uppercase tracking-wider shadow-sm hover:bg-blue-700 transition-all hover:scale-[1.02] active:scale-95">
+                                                    <Plus size={16} /> Сдать
                                                 </button>
-                                            )
-                                        )}
-                                        {!emptySubmission && !isMultiSubmission && completedSubmissions.length === 0 && (
-                                             <button onClick={() => handleOpenSubmissionModal(report.id)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3 text-base font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-sm">
-                                                <Plus className="h-5 w-5" />
-                                                <span>Отправить отчёт</span>
-                                            </button>
-                                        )}
+                                            )}
+                                        </div>
                                     </div>
-                                </li>
-                            )
-                        })}
-                    </ul>
+                                ))}
+                            </div>
+                        );
+                    })}
                 </div>
             </div>
+        );
+    };
 
-             {isSubmissionModalOpen && editingSubmission && (
-                <ReportSubmissionModal
-                    isOpen={isSubmissionModalOpen}
-                    onClose={() => setIsSubmissionModalOpen(false)}
-                    onSuccess={handleSubmissionSuccess}
-                    submissionData={editingSubmission}
+    if (loading) return <DeputyReportsSkeleton />;
+
+    return (
+        <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+            <header>
+                <h1 className="text-3xl font-bold text-gray-900">Моя отчётность</h1>
+                <p className="mt-1 text-gray-500">Список ваших задач по отчетным периодам</p>
+            </header>
+
+            <div className="space-y-4">
+                {periods.map(period => {
+                    const isExp = expandedPeriods.has(period.id);
+                    const pData = periodsData[period.id];
+                    const now = new Date();
+                    const isActive = isAfter(parseISO(period.endDate), now);
+
+                    // Группировка отчетов по категориям
+                    const infoudars = pData?.reports?.filter(r => r.theme === 'infoudar') || [];
+                    const events = pData?.reports?.filter(r => ['event', 'reg_event', 'opt_event'].includes(r.theme)) || [];
+                    const vdpgs = pData?.reports?.filter(r => r.theme === 'vdpg') || [];
+                    const letters = pData?.reports?.filter(r => r.theme === 'letter') || [];
+
+                    return (
+                        <div key={period.id} className={`bg-white rounded-2xl border transition-all ${isExp ? 'ring-2 ring-blue-50 border-blue-200 shadow-lg' : 'border-gray-200 shadow-sm'}`}>
+                            <button onClick={() => togglePeriod(period.id)} className="w-full flex items-center justify-between p-5 text-left group">
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-2.5 rounded-xl transition-colors ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                        <Calendar size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-gray-900 capitalize group-hover:text-blue-700 transition-colors">{period.name}</h3>
+                                        <p className="text-xs text-gray-400 font-medium">
+                                            {format(parseISO(period.startDate), 'd MMMM', { locale: ru })} — {format(parseISO(period.endDate), 'd MMMM yyyy', { locale: ru })}
+                                        </p>
+                                    </div>
+                                    {isActive && (
+                                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-green-100 text-green-700">Активен</span>
+                                    )}
+                                </div>
+                                {isExp ? <ChevronUp className="text-gray-300" /> : <ChevronDown className="text-gray-300" />}
+                            </button>
+
+                            {isExp && (
+                                <div className="p-5 border-t border-gray-50 space-y-10 animate-in slide-in-from-top-2 duration-300">
+                                    {pData?.loading ? (
+                                        <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-blue-600" /></div>
+                                    ) : pData?.error ? (
+                                        <div className="py-6 text-center text-red-500 bg-red-50 rounded-xl border border-red-100 flex flex-col items-center gap-2">
+                                            <AlertCircle size={24} />
+                                            <p className="text-sm font-medium">Ошибка загрузки. Попробуйте обновить страницу.</p>
+                                        </div>
+                                    ) : !pData?.myRecord ? (
+                                        <div className="py-12 text-center text-gray-400">
+                                            <Inbox size={40} className="mx-auto mb-3 opacity-20" />
+                                            <p className="text-sm">В этом периоде у вас нет назначенных отчетов</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            {renderReportGroup('Инфоудары', Zap, infoudars, pData.myRecord, period.id)}
+                                            {renderReportGroup('Мероприятия', LayoutGrid, events, pData.myRecord, period.id, false)}
+                                            {renderReportGroup('ВДПГ', Flag, vdpgs, pData.myRecord, period.id)}
+                                            {renderReportGroup('Письма и обращения', MessageSquare, letters, pData.myRecord, period.id)}
+                                        </>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    );
+                })}
+            </div>
+
+            {isSubmissionModalOpen && pendingSubmission && (
+                <ReportSubmissionModal 
+                    isOpen={isSubmissionModalOpen} 
+                    onClose={() => setIsSubmissionModalOpen(false)} 
+                    onSuccess={handleModalSuccess} 
+                    submissionData={pendingSubmission} 
                 />
             )}
-
-            <ConfirmationModal
-                isOpen={isDeleteModalOpen}
-                onClose={() => setIsDeleteModalOpen(false)}
-                onConfirm={handleDelete}
-                title="Удалить отчёт?"
-                confirmButtonVariant="danger"
-                confirmButtonText="Удалить"
-            >
-                Вы уверены, что хотите удалить этот отчёт? Это действие необратимо.
-            </ConfirmationModal>
-        </>
+            
+            {isConfirmModalOpen && confirmData && (
+                <ConfirmationModal 
+                    isOpen={isConfirmModalOpen} 
+                    onClose={() => setIsConfirmModalOpen(false)} 
+                    onConfirm={handleFinalConfirm} 
+                    title="Подтвердите ссылку" 
+                    confirmButtonVariant="success"
+                    confirmButtonText={isSaving ? "Сохранение..." : "Подтвердить"}
+                >
+                    <div className="space-y-3">
+                        <p className="text-sm">Вы собираетесь сохранить следующую ссылку:</p>
+                        <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 font-mono text-[11px] break-all text-left">
+                            {confirmData.link}
+                        </div>
+                    </div>
+                </ConfirmationModal>
+            )}
+        </div>
     );
 };
 

@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, FileJson2, AlertTriangle } from 'lucide-react';
-import type { DailyPlan, EventCategory, EventTheme } from '../../data/federalPlanData';
-import { eventCategoryOptions, eventThemeOptions } from '../../data/federalPlanData';
+import type { DailyPlan, PartyImage } from '../../data/federalPlanData';
+import { partyImageOptions } from '../../data/federalPlanData';
 
 // TypeGuards for validation
 const isString = (val: unknown): val is string => typeof val === 'string';
@@ -10,18 +11,18 @@ const isBoolean = (val: unknown): val is boolean => typeof val === 'boolean';
 const isNumber = (val: unknown): val is number => typeof val === 'number';
 const isObject = (val: unknown): val is Record<string, unknown> => typeof val === 'object' && val !== null && !Array.isArray(val);
 
-const validCategories = new Set(eventCategoryOptions.map(o => o.value));
-const validThemes = new Set(eventThemeOptions.map(o => o.value));
+const validImages = new Set(partyImageOptions.map(o => o.value));
 
-const isEventCategory = (val: unknown): val is EventCategory => isString(val) && (val === '' || validCategories.has(val as EventCategory));
-const isEventTheme = (val: unknown): val is EventTheme => isString(val) && (val === '' || validThemes.has(val as EventTheme));
+const isPartyImage = (val: unknown): val is PartyImage => isString(val) && (val === '' || validImages.has(val as PartyImage));
 
 function validatePlanEvent(event: unknown): string | null {
     if (!isObject(event)) return 'Элемент события не является объектом.';
     if (!isNumber(event.id)) return 'Поле `id` события должно быть числом.';
     if (!isString(event.title) || event.title.trim() === '') return 'Поле `title` события должно быть непустой строкой.';
-    if (!isEventCategory(event.category)) return `Категория события "${event.category}" недействительна.`;
-    if (!isEventTheme(event.theme)) return `Тема события "${event.theme}" недействительна.`;
+    
+    // Проверка нового поля partyImage
+    if (!isPartyImage(event.partyImage)) return `Поле "partyImage" ("${event.partyImage}") недействительно. Допустимые значения: ${Array.from(validImages).join(', ')}.`;
+    
     if (!isBoolean(event.isInfostrike)) return 'Поле `isInfostrike` события должно быть логическим значением.';
     if (!isObject(event.details)) return 'Поле `details` события должно быть объектом.';
     for (const [key, value] of Object.entries(event.details)) {
@@ -98,6 +99,21 @@ const JsonImportModal: React.FC<JsonImportModalProps> = ({ isOpen, onClose, onIm
 
     if (!isOpen || !portalRoot) return null;
 
+    // Updated placeholder example to reflect new structure
+    const placeholderExample = `{
+  "date": "2025-11-04",
+  "holidays": ["День народного единства"],
+  "events": [
+    {
+      "id": 1,
+      "title": "Митинг-концерт",
+      "partyImage": "Державность",
+      "isInfostrike": false,
+      "details": { "Место": "Центральная площадь" }
+    }
+  ]
+}`;
+
     return createPortal(
         <div 
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
@@ -106,7 +122,7 @@ const JsonImportModal: React.FC<JsonImportModalProps> = ({ isOpen, onClose, onIm
             aria-labelledby="json-import-title"
         >
             <div 
-                className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl m-4 flex flex-col transform transition-all max-h-[90vh]"
+                className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl m-4 flex flex-col transform transition-all max-h-[90vh] overflow-hidden"
             >
                 <header className="flex items-center justify-between p-4 border-b border-gray-200 flex-shrink-0">
                     <div className="flex items-center gap-3">
@@ -124,12 +140,14 @@ const JsonImportModal: React.FC<JsonImportModalProps> = ({ isOpen, onClose, onIm
 
                 <main className="p-6 flex-grow overflow-y-auto">
                     <p className="text-sm text-gray-600 mb-4">
-                        Вставьте JSON-код, чтобы автоматически заполнить данные для этой даты. Убедитесь, что структура соответствует требуемому формату.
+                        Вставьте JSON-код, чтобы автоматически заполнить данные для этой даты. 
+                        Убедитесь, что поле <code>partyImage</code> содержит одно из значений: 
+                        <b>"Перемены после СВО"</b>, <b>"Державность"</b> или <b>"Наследие"</b>.
                     </p>
                     <textarea
                         value={jsonText}
                         onChange={(e) => setJsonText(e.target.value)}
-                        placeholder='{ "date": "", "holidays": [], "events": [] }'
+                        placeholder={placeholderExample}
                         className={`w-full h-80 p-4 border rounded-lg font-mono text-sm bg-slate-50 text-gray-900 focus:outline-none focus:ring-2 resize-y
                             ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'}
                         `}

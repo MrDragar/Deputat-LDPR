@@ -1,17 +1,18 @@
+
 import React from 'react';
-import type { EventCategory } from '../../data/federalPlanData';
-import { eventCategoryConfig } from '../../data/federalPlanData';
+import type { PartyImage } from '../../data/federalPlanData';
+import { partyImageConfig } from '../../data/federalPlanData';
 
 interface FilterTabsProps {
-    activeFilter: EventCategory | 'all';
-    setActiveFilter: (filter: EventCategory | 'all') => void;
-    counts: Record<EventCategory | 'all', number>;
+    activeFilter: PartyImage | 'all';
+    setActiveFilter: (filter: PartyImage | 'all') => void;
+    counts: Record<PartyImage | 'all', number>;
 }
 
 const filters = [
     { value: 'all' as const, label: 'Все' },
-    ...Object.entries(eventCategoryConfig).map(([category, config]) => ({
-        value: category as EventCategory,
+    ...Object.entries(partyImageConfig).map(([image, config]) => ({
+        value: image as PartyImage,
         label: config.label,
     }))
 ];
@@ -29,7 +30,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({ activeFilter, setActiveFilter, 
                         if (filter.value === 'all') {
                             activeClasses = 'bg-blue-600 text-white';
                         } else {
-                            activeClasses = `${eventCategoryConfig[filter.value].colors.bg} text-white`;
+                            activeClasses = `${partyImageConfig[filter.value].colors.bg} text-white`;
                         }
                     } else {
                         activeClasses = 'bg-gray-100 text-gray-700 hover:bg-gray-200';
