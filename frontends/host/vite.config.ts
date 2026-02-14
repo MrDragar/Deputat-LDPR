@@ -23,14 +23,14 @@ export default defineConfig(({ mode }) => {
                 dashboard: `/dashboard/assets/remoteEntry.js`,
                 congrats: `/congrats/assets/remoteEntry.js`,
               },
-              // Removed 'recharts' from shared because it is not in package.json
-              shared: ['react', 'react-dom', 'react-router-dom', 'lucide-react'],
+              shared: ['react', 'react-dom', 'react-router-dom', 'lucide-react', 'recharts'],
           }),
       ],
       define: {
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY)
-      },
+      }
+,
       resolve: {
         alias: {
           '@': path.resolve(__dirname, '.'),
