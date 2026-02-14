@@ -147,7 +147,27 @@ services:
       syslog_server:
         condition: service_healthy
     logging: *default-logging
-
+  backend_federal_plan:
+    build: ./backend_federal_plan
+    container_name: backend_federal_plan
+    command: uvicorn src.main:app --reload --port 8000 --host 0.0.0.0
+    ports:
+      - "8005:8000"
+    restart: always
+    networks:
+      - app_network
+    volumes:
+      - ./backend_federal_plan/src:/app/src
+      - ./federal_plan_db.sqlite3:/app/federal_plan_db.sqlite3
+    env_file:
+      - .env
+    secrets:
+      - jwt_private_key
+      - jwt_public_key
+    depends_on:
+      syslog_server:
+        condition: service_healthy
+    logging: *default-logging
   db_tg:
     image: postgres:17
     environment:
