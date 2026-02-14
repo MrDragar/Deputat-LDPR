@@ -91,7 +91,7 @@ const LoginPage: React.FC = () => {
           <p className="text-sm text-gray-800/80">
             Нет аккаунта?{' '}
             <a
-              href="https://t.me/deputat_lpdr_bot"
+              href="https://t.me/deputat_ldpr_bot"
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-blue-600 hover:underline"
