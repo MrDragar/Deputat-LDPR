@@ -16,6 +16,8 @@ import {
   LayoutDashboard,
   LetterTextIcon
 } from 'lucide-react';
+import Logo from '../ui/Logo';
+
 const ReportsApp = lazy(() => import('reports/App'));
 
 interface SidebarProps {
@@ -36,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setCollapsed, isMobileOp
     { to: '/applications', text: 'Заявки', icon: FileText, roles: ['admin'], external: false },
     { to: '/reports', text: 'Отчётность', icon: BarChart3, roles: ['admin'], external: false },
     { to: '/my-profile', text: 'Моя анкета', icon: UserIcon, roles: ['deputy', 'coordinator'], external: false },
-     { to: '/dashboard', text: 'Дашборд', icon: LayoutDashboard, roles: ['admin'], external: false },
+     { to: '/dashboard', text: 'Дашборд', icon: LayoutDashboard, roles: ['admin'], external: true },
      { to: '/congrats', text: 'Поздравления', icon: LetterTextIcon, roles: ['admin', 'deputy', 'coordinator'], external: false },
   ];
 
@@ -73,8 +75,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setCollapsed, isMobileOp
         )}
         <aside className={sidebarClasses}>
           <div className="p-4 flex items-center justify-between border-b border-gray-200 h-[69px]">
-            <div className={`overflow-hidden transition-all duration-300 ease-out ${isCollapsed ? 'w-0' : 'w-full'}`}>
-              <h1 className="text-2xl font-bold text-blue-700 whitespace-nowrap">ЛДПР</h1>
+            <div className={`overflow-hidden transition-all duration-300 ease-out ${isCollapsed ? 'w-0 opacity-0' : 'w-full opacity-100'}`}>
+              <Logo className="h-7 w-auto" />
             </div>
             <button
                 onClick={() => setCollapsed(!isCollapsed)}

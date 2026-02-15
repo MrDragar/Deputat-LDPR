@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import TextInput from '../../components/ui/TextInput';
 import { APIError } from '../../services/api';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
+import Logo from '../../components/ui/Logo';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -34,7 +35,7 @@ const LoginPage: React.FC = () => {
       <div className="w-full max-w-md space-y-8">
         <div className="bg-white/70 backdrop-blur-xl border border-white/20 p-8 rounded-2xl shadow-2xl">
           <div className="flex flex-col items-center text-center mb-8">
-            <h1 className="text-4xl font-bold text-blue-700 mb-4">ЛДПР</h1>
+            <Logo className="h-10 w-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900">Вход в систему</h2>
           </div>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -87,7 +88,7 @@ const LoginPage: React.FC = () => {
           <p className="text-sm text-gray-800/80">
             Нет аккаунта?{' '}
             <a
-              href="https://t.me/deputat_lpdr_bot"
+              href="https://t.me/deputat_ldpr_bot"
               target="_blank"
               rel="noopener noreferrer"
               className="font-semibold text-blue-600 hover:underline"

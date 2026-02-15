@@ -118,7 +118,7 @@ const App: React.FC = () => {
                     <ProtectedRoute roles={['deputy', 'coordinator']}>
                       <MyProfilePage />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
                 <Route
                   path="congrats"
@@ -128,16 +128,16 @@ const App: React.FC = () => {
                     </ProtectedRoute>
                   }
                 />
-
-                  <Route
-                      path="dashboard"
-                      element={
-                          <ProtectedRoute roles={['admin']}>
-                              <DashboardApp />
-                          </ProtectedRoute>
-                      }
-                  />
+                <Route
+                    path="dashboard"
+                    element={
+                        <ProtectedRoute roles={['admin']}>
+                            <DashboardApp />
+                        </ProtectedRoute>
+                    }
+                />
               </Route>
+
 
 <Route
   path="/autumn-report" 

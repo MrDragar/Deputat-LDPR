@@ -1,5 +1,6 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
+import Logo from '../ui/Logo';
 
 interface HeaderProps {
     onMenuClick: () => void;
@@ -15,7 +16,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             >
                 <Menu className="h-6 w-6" />
             </button>
-            <div className="ml-4 text-lg font-bold text-blue-700">ЛДПР</div>
+            <div className="ml-4">
+                <Logo className="h-6 w-auto" />
+            </div>
         </header>
     );
 };
