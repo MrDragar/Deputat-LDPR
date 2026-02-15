@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const version = Date.now();
+
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, '.', '');
     return {
@@ -19,9 +21,9 @@ export default defineConfig(({ mode }) => {
           federation({
                 name: 'host-app',
                 remotes: {
-                reports: `/reports/assets/remoteEntry.js`,
-                dashboard: `/dashboard/assets/remoteEntry.js`,
-                congrats: `/congrats/assets/remoteEntry.js`,
+                reports: `/reports/assets/remoteEntry.js?v=${version}`,
+                dashboard: `/dashboard/assets/remoteEntry.js?v=${version}`,
+                congrats: `/congrats/assets/remoteEntry.js?v=${version}`,
               },
               shared: ['react', 'react-dom', 'react-router-dom', 'lucide-react', 'recharts'],
           }),
