@@ -47,8 +47,8 @@ async def create_pdf(input_data: InputData, request: Request):
         report_filename = f"report_{uuid.uuid4()}.pdf"
         report_filepath = os.path.join("media", report_filename)
         generate_pdf_report(input_data.data.dict(), report_filepath)
-        db.insert(input_data.user_id, input_data.data.dict())
         link = f"{request.base_url}/api/reports/media/{report_filename}".replace('http://', 'https://')
+        db.insert(input_data.user_id, input_data.data.dict(), link)
         CeleryTaskClient.send_log(
             message=f"Новый отчёт у {input_data.data.general_info.full_name}\nСсылка на отчёт: {link}",
             level='INFO', extra_data={**input_data.data.dict(), "link": link})
