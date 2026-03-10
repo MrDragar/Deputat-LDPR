@@ -37,3 +37,39 @@ class Database:
         query = "UPDATE records SET report_link = ? WHERE id = ?"
         self.conn.execute(query, (report_link, record_id))
         self.conn.commit()
+
+    def get_all(self) -> list:
+        """Получить все записи без колонки data"""
+        query = "SELECT id, user_id, report_link, created_at FROM records ORDER BY id DESC"
+        cursor = self.conn.execute(query)
+        return [
+            {"id": row[0], "user_id": row[1], "report_link": row[2], "created_at": row[3]}
+            for row in cursor.fetchall()
+        ]
+
+    def get_by_id(self, record_id: int) -> Optional[Dict[str, Any]]:
+        """Получить детальную запись по ID"""
+        query = "SELECT id, user_id, data, report_link, created_at FROM records WHERE id = ?"
+        cursor = self.conn.execute(query, (record_id,))
+        row = cursor.fetchone()
+        if row:
+            return {
+                "id": row[0], 
+                "user_id": row[1], 
+                "data": json.loads(row[2]), 
+                "report_link": row[3], 
+                "created_at": row[4]
+            }
+        return None
+
+    def update(self, record_id: int, data: Dict[str, Any], report_link: str):
+        """Обновить data и ссылку для записи"""
+        query = "UPDATE records SET data = ?, report_link = ? WHERE id = ?"
+        self.conn.execute(query, (json.dumps(data), report_link, record_id))
+        self.conn.commit()
+
+    def delete(self, record_id: int):
+        """Удалить запись по ID"""
+        query = "DELETE FROM records WHERE id = ?"
+        self.conn.execute(query, (record_id,))
+        self.conn.commit()

@@ -124,6 +124,8 @@ services:
       - app_network
     environment:
       REDIS_URL: "redis://redis:6379/0"
+    secrets:
+      - jwt_public_key
     volumes:
       - ./reports_storage:/app/media
       - ./reports_db.sqlite3:/app/reports_db.sqlite3
