@@ -35,6 +35,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     user_id = models.BigIntegerField(primary_key=True, blank=False)
     login = models.CharField(max_length=50, unique=True, verbose_name="Логин", null=True, blank=True)
     password = models.CharField(max_length=100, verbose_name="Пароль", null=True, blank=True)
+    is_available = models.BooleanField(verbose_name='Взаимодействует', default=True, blank=True,
+                                       null=False)
+    reason_unavailable = models.TextField(verbose_name='Причина невзаимодействия', null=True,
+                                          blank=True, default=None)
     is_active = models.BooleanField(default=False, verbose_name="Активный")
     
     groups = models.ManyToManyField(

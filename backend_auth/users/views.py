@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from users.models import User
 from ldpr_form.permissions import IsAdmin, IsAuthenticated, IsAdminOrCoordinator
-from .serializers import UserSerializer, UserListSerializer
+from .serializers import UserSerializer, UserListSerializer, UserPatchAvailableSerializer
 from .services import get_user_list
 
 
@@ -53,3 +53,49 @@ class UserDetailAPIView(APIView):
                 {"error": "User not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+class UserUpdateAvailabilityAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, user_id):
+        user_id = int(user_id)
+
+        if user_id != request.user.user_id and request.user.role not in ["admin", "coordinator"]:
+            return Response(
+                {"error": "Недостаточно прав"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            user = User.objects.get(user_id=user_id)
+        except User.DoesNotExist:
+            return Response(
+                {"error": "User not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = UserPatchAvailableSerializer(
+            user,
+            data=request.data,
+            partial=True
+        )
+
+        if not serializer.is_valid():
+            return Response(
+                {"errors": serializer.errors},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        validated_data = serializer.validated_data
+        if validated_data.get('is_available') is True:
+            validated_data['reason_unavailable'] = None
+
+        for attr, value in validated_data.items():
+            setattr(user, attr, value)
+        user.save(update_fields=validated_data.keys())
+
+        return Response({
+            "status": "success",
+            "user": UserPatchAvailableSerializer(user).data
+        })

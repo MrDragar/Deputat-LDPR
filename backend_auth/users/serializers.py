@@ -65,6 +65,8 @@ class UserSerializer(serializers.ModelSerializer):
             'login',
             'is_active',
             'role',
+            'is_available',
+            'reason_unavailable',
             'date_joined',
             'last_login',
             'deputy_form'
@@ -95,8 +97,33 @@ class UserListSerializer(serializers.ModelSerializer):
             'login',
             'is_active',
             'role',
+            'is_available',
+            'reason_unavailable',
             'date_joined',
             'last_login',
             'deputy_form'
         ]
         depth = 1
+
+
+class UserPatchAvailableSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'is_available',
+            'reason_unavailable',
+        ]
+
+    def validate(self, data):
+        is_available = data.get('is_available')
+        reason = data.get('reason_unavailable')
+
+        if is_available is True and reason:
+            raise serializers.ValidationError(
+                "Если пользователь доступен (is_available=True), причина недоступности должна быть пустой"
+            )
+        if is_available is False and not reason:
+            raise serializers.ValidationError(
+                "Если пользователь недоступен (is_available=False), необходимо указать причину"
+            )
+        return data
