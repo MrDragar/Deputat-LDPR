@@ -1,5 +1,5 @@
-#add-deputy-root {
-  @import "tailwindcss";
+@import "tailwindcss";
+@config "../tailwind.config.js";
 
   @layer base {
     * {
@@ -31,4 +31,3 @@
       background-color: #94a3b8;
     }
   }
-}
