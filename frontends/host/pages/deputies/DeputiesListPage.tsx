@@ -3,12 +3,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import type { User } from '../../types';
-import { Search, MoreVertical, Inbox, ChevronRight, Eye, User as UserIcon } from 'lucide-react';
+import { Search, MoreVertical, Inbox, ChevronRight, Eye, User as UserIcon, Plus, UserCheck, UserX, RefreshCw } from 'lucide-react';
 import TextInput from '../../components/ui/TextInput';
 import CheckboxDropdown from '../../components/ui/CheckboxDropdown';
 import DeputiesListSkeleton from '../../components/skeletons/DeputiesListSkeleton';
 import BottomSheet from '../../components/ui/BottomSheet';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
+import AvailabilityModal from './AvailabilityModal';
 
 const ALL_REGIONS: string[] = [
     'Алтайский край', 'Амурская область', 'Архангельская область', 'Астраханская область', 'Белгородская область', 'Брянская область',
@@ -25,7 +26,7 @@ const ALL_REGIONS: string[] = [
     'Республика Тыва', 'Республика Хакасия', 'Ростовская область', 'Рязанская область', 'Самарская область', 'Санкт-Петербург',
     'Саратовская область', 'Сахалинская область', 'Свердловская область', 'Севастополь', 'Смоленская область', 'Ставропольский край',
     'Тамбовская область', 'Тверская область', 'Томская область', 'Тульская область', 'Тюменская область', 'Удмуртская Республика',
-    'Ульяновская область', 'Хабаровский край', 'Ханты-Мансийский автономный округ-Югра', 'Херсонская область', 'Челябинская область',
+    'Ульяновская область', 'Хабаровский край', 'Ханты-мансийский автономный округ-Югра', 'Херсонская область', 'Челябинская область',
     'Чеченская Республика', 'Чувашская Республика', 'Чукотский автономный округ', 'Ямало-Ненецкий автономный округ', 'Ярославская область'
 ];
 
@@ -48,7 +49,9 @@ const DesktopActionMenu: React.FC<{
     isOpen: boolean; 
     onToggle: (id: number) => void; 
     onClose: () => void;
-}> = ({ deputyId, isOpen, onToggle, onClose }) => {
+    isAdmin: boolean;
+    onEditAvailability: (id: number) => void;
+}> = ({ deputyId, isOpen, onToggle, onClose, isAdmin, onEditAvailability }) => {
     const menuRef = useRef<HTMLDivElement>(null);
     
     // Важно: проверяем isOpen внутри обработчика, чтобы не закрывать чужие меню
@@ -73,7 +76,7 @@ const DesktopActionMenu: React.FC<{
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 z-[100] animate-in fade-in zoom-in-95 duration-100 origin-top-right ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-100 z-[100] animate-in fade-in zoom-in-95 duration-100 origin-top-right ring-1 ring-black ring-opacity-5 focus:outline-none">
                     <div className="py-1">
                         <Link
                             to={`/deputies/${deputyId}`}
@@ -86,6 +89,19 @@ const DesktopActionMenu: React.FC<{
                             <Eye size={18} />
                             Посмотреть анкету
                         </Link>
+                        {isAdmin && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onClose();
+                                    onEditAvailability(deputyId);
+                                }}
+                                className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-blue-600 flex items-center gap-3 transition-colors"
+                            >
+                                <RefreshCw size={18} />
+                                Изменить взаимодействие
+                            </button>
+                        )}
                     </div>
                 </div>
             )}
@@ -113,6 +129,7 @@ const DeputiesListPage: React.FC = () => {
     // Actions
     const [selectedDeputyForActions, setSelectedDeputyForActions] = useState<User | null>(null);
     const [desktopMenuOpenId, setDesktopMenuOpenId] = useState<number | null>(null);
+    const [availabilityModalDeputy, setAvailabilityModalDeputy] = useState<User | null>(null);
 
     // Pagination / Infinite Scroll State
     const [displayCount, setDisplayCount] = useState(30);
@@ -208,6 +225,21 @@ const DeputiesListPage: React.FC = () => {
         return filteredDeputies.slice(0, displayCount);
     }, [filteredDeputies, displayCount]);
 
+    const handleAvailabilityChange = async (isAvailable: boolean, reason: string | null) => {
+        if (!availabilityModalDeputy) return;
+        try {
+            await api.updateAvailability(availabilityModalDeputy.userId, isAvailable, reason);
+            setAllUsers(prev => prev.map(u => 
+                u.userId === availabilityModalDeputy.userId 
+                    ? { ...u, isAvailable, reasonUnavailable: reason } 
+                    : u
+            ));
+            setAvailabilityModalDeputy(null);
+        } catch (err) {
+            console.error('Failed to update availability', err);
+            // Optionally show an error message
+        }
+    };
 
     if (loading) return <DeputiesListSkeleton />;
     if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
@@ -223,6 +255,15 @@ const DeputiesListPage: React.FC = () => {
                             {filteredDeputies.length}
                         </span>
                     </div>
+                    {currentUser?.role === 'admin' && (
+                        <Link
+                            to="/add_deputy"
+                            className="inline-flex items-center justify-center bg-blue-600 text-white font-semibold rounded-full w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 sm:rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                        >
+                            <Plus size={20} />
+                            <span className="hidden sm:inline sm:ml-2">Добавить депутата</span>
+                        </Link>
+                    )}
                 </div>
 
                 <div className="space-y-4">
@@ -285,6 +326,7 @@ const DeputiesListPage: React.FC = () => {
                                         <th scope="col" className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Регион</th>
                                         <th scope="col" className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Роль в РО</th>
                                         <th scope="col" className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Уровень</th>
+                                        <th scope="col" className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Взаимодействие</th>
                                         <th scope="col" className="px-6 py-4 w-16 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider last:rounded-tr-xl">Действия</th>
                                     </tr>
                                 </thead>
@@ -293,8 +335,8 @@ const DeputiesListPage: React.FC = () => {
                                         const form = deputy.deputyForm!;
                                         return (
                                             <tr key={deputy.userId} className="bg-white hover:bg-slate-50/50 transition-colors group">
-                                                <td className="px-6 py-5 text-gray-400 font-bold text-center">{index + 1}</td>
-                                                <th scope="row" className="px-6 py-5 font-medium text-gray-900 whitespace-nowrap">
+                                                <td className={`px-6 py-5 font-bold text-center ${deputy.userId < 0 ? 'text-red-500' : 'text-gray-400'}`}>{index + 1}</td>
+                                                <th scope="row" className={`px-6 py-5 font-medium whitespace-nowrap ${deputy.userId < 0 ? 'text-red-500' : 'text-gray-900'}`}>
                                                     {`${form.lastName} ${form.firstName} ${form.middleName || ''}`}
                                                 </th>
                                                 <td className="px-6 py-5 text-gray-600 font-medium">{form.region}</td>
@@ -304,12 +346,27 @@ const DeputiesListPage: React.FC = () => {
                                                         {levelDisplayMap[form.representativeBodyLevel] || form.representativeBodyLevel}
                                                     </span>
                                                 </td>
+                                                <td className="px-6 py-5 text-center">
+                                                    <div className="flex justify-center">
+                                                        {deputy.isAvailable !== false ? (
+                                                            <div className="text-green-500" title="Взаимодействующий">
+                                                                <UserCheck size={20} />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-red-500" title={`Невзаимодействующий: ${deputy.reasonUnavailable || 'Причина не указана'}`}>
+                                                                <UserX size={20} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
                                                 <td className="px-6 py-5 text-center overflow-visible relative">
                                                     <DesktopActionMenu 
                                                         deputyId={deputy.userId}
                                                         isOpen={desktopMenuOpenId === deputy.userId}
                                                         onToggle={(id) => setDesktopMenuOpenId(desktopMenuOpenId === id ? null : id)}
                                                         onClose={() => setDesktopMenuOpenId(null)}
+                                                        isAdmin={currentUser?.role === 'admin'}
+                                                        onEditAvailability={() => setAvailabilityModalDeputy(deputy)}
                                                     />
                                                 </td>
                                             </tr>
@@ -337,11 +394,11 @@ const DeputiesListPage: React.FC = () => {
                                             onClick={() => setSelectedDeputyForActions(deputy)}
                                             className="w-full flex items-start gap-4 p-5 text-left active:bg-gray-50 transition-colors"
                                         >
-                                            <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center bg-slate-100 rounded-full font-bold text-slate-500 text-sm">
+                                            <div className={`flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full font-bold text-sm ${deputy.userId < 0 ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-500'}`}>
                                                 {index + 1}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-base font-medium text-gray-900 truncate leading-tight">
+                                                <p className={`text-base font-medium truncate leading-tight ${deputy.userId < 0 ? 'text-red-500' : 'text-gray-900'}`}>
                                                     {form.lastName} {form.firstName} {form.middleName}
                                                 </p>
                                                 <div className="mt-2 space-y-1 text-sm">
@@ -351,10 +408,19 @@ const DeputiesListPage: React.FC = () => {
                                                     <p className="text-gray-500 line-clamp-1">
                                                         <span className="text-gray-400 font-normal">Роль:</span> {form.partyRole}
                                                     </p>
-                                                    <div className="pt-1">
+                                                    <div className="pt-1 flex items-center gap-2">
                                                         <span className="inline-flex px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase bg-slate-100 text-slate-500 border border-slate-200">
                                                             {levelDisplayMap[form.representativeBodyLevel] || form.representativeBodyLevel}
                                                         </span>
+                                                        {deputy.isAvailable !== false ? (
+                                                            <div className="text-green-500" title="Взаимодействующий">
+                                                                <UserCheck size={16} />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-red-500" title={`Невзаимодействующий: ${deputy.reasonUnavailable || 'Причина не указана'}`}>
+                                                                <UserX size={16} />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -381,23 +447,52 @@ const DeputiesListPage: React.FC = () => {
             <BottomSheet
                 isOpen={!!selectedDeputyForActions}
                 onClose={() => setSelectedDeputyForActions(null)}
-                onConfirm={() => {
-                    if (selectedDeputyForActions) {
-                        navigate(`/deputies/${selectedDeputyForActions.userId}`);
-                        setSelectedDeputyForActions(null);
-                    }
-                }}
                 title="Выберите действие"
-                confirmButtonText="Посмотреть анкету"
-                icon={UserIcon}
+                hideIcon={true}
+                hideActions={true}
             >
-                <div className="w-full border-b border-gray-100 mb-4" />
-                <div className="pb-2">
-                    <p className="text-lg font-medium text-gray-900 text-center">
+                <div className="border-b border-gray-200 mb-5 -mt-1 -mx-4 sm:-mx-6" />
+                <div className="pb-4">
+                    <p className="text-lg font-medium text-gray-900 text-center mb-6">
                         {selectedDeputyForActions?.deputyForm?.lastName} {selectedDeputyForActions?.deputyForm?.firstName} {selectedDeputyForActions?.deputyForm?.middleName}
                     </p>
+                    <div className="flex flex-col gap-2">
+                        <button
+                            onClick={() => {
+                                if (selectedDeputyForActions) {
+                                    navigate(`/deputies/${selectedDeputyForActions.userId}`);
+                                    setSelectedDeputyForActions(null);
+                                }
+                            }}
+                            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors shadow-sm"
+                        >
+                            <Eye size={20} />
+                            Посмотреть анкету
+                        </button>
+                        
+                        {currentUser?.role === 'admin' && (
+                            <button
+                                onClick={() => {
+                                    setAvailabilityModalDeputy(selectedDeputyForActions);
+                                    setSelectedDeputyForActions(null);
+                                }}
+                                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-medium transition-colors shadow-sm"
+                            >
+                                <RefreshCw size={20} className="text-gray-500" />
+                                Изменить взаимодействие
+                            </button>
+                        )}
+                    </div>
                 </div>
             </BottomSheet>
+
+            {/* Availability Modal */}
+            <AvailabilityModal
+                isOpen={!!availabilityModalDeputy}
+                onClose={() => setAvailabilityModalDeputy(null)}
+                deputy={availabilityModalDeputy}
+                onConfirm={handleAvailabilityChange}
+            />
         </div>
     );
 };

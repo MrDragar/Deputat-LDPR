@@ -15,3 +15,9 @@ declare module 'congrats/*' {
   const content: ComponentType<any>;
   export default content;
 }
+
+declare module 'add_deputy/*' {
+  import { ComponentType } from 'react';
+  const content: ComponentType<any>;
+  export default content;
+}

@@ -110,6 +110,8 @@ export interface User {
   dateJoined: string;
   lastLogin: string | null;
   deputyForm: RegistrationForm | null;
+  isAvailable: boolean;
+  reasonUnavailable: string | null;
 }
 
 // --- NEW Reporting System Types ---

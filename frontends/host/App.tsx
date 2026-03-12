@@ -21,6 +21,7 @@ import './index.css'  // Импорт Tailwind CSS
 const AutumnReport = React.lazy(() => import('reports/App'));
 const DashboardApp = React.lazy(() => import('dashboard/App'));
 const CongratsApp = React.lazy(() => import('congrats/App'));
+const AddDeputyApp = React.lazy(() => import('add_deputy/App'));
 
 // Wrapper compoent to scope the Federal Plan Context
 const FederalPlanWrapper = () => {
@@ -125,6 +126,14 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute roles={['deputy', 'coordinator', 'admin']}>
                       <CongratsApp />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="add_deputy"
+                  element={
+                    <ProtectedRoute roles={['admin']}>
+                      <AddDeputyApp />
                     </ProtectedRoute>
                   }
                 />

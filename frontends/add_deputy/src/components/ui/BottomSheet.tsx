@@ -5,15 +5,12 @@ import { X, AlertTriangle, CheckCircle } from 'lucide-react';
 interface BottomSheetProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm?: () => void;
+    onConfirm: () => void;
     title: string;
     children: React.ReactNode;
     confirmButtonText?: string;
     confirmButtonVariant?: 'danger' | 'primary' | 'success';
     icon?: React.ElementType;
-    isConfirmDisabled?: boolean;
-    hideIcon?: boolean;
-    hideActions?: boolean;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({ 
@@ -24,10 +21,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
     children,
     confirmButtonText = 'Подтвердить',
     confirmButtonVariant = 'primary',
-    icon,
-    isConfirmDisabled = false,
-    hideIcon = false,
-    hideActions = false
+    icon
 }) => {
     const sheetRef = useRef<HTMLDivElement>(null);
     const portalRoot = typeof document !== 'undefined' ? document.getElementById('root') : null;
@@ -102,12 +96,10 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
                     </button>
                     
                     <div className="text-center">
-                        {!hideIcon && (
-                            <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${iconBg}`}>
-                                <IconToRender className="h-6 w-6 text-white" aria-hidden="true" />
-                            </div>
-                        )}
-                        <div className={hideIcon ? "" : "mt-3"}>
+                        <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${iconBg}`}>
+                            <IconToRender className="h-6 w-6 text-white" aria-hidden="true" />
+                        </div>
+                        <div className="mt-3">
                             <h2 id="sheet-title" className="text-xl font-bold text-gray-900">{title}</h2>
                         </div>
                     </div>
@@ -116,25 +108,22 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
                         {children}
                     </div>
 
-                    {!hideActions && (
-                        <div className="mt-6 flex flex-col-reverse gap-3">
-                             <button
-                                type="button"
-                                onClick={onClose}
-                                className="w-full px-6 py-3 text-base font-semibold rounded-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            >
-                                Отмена
-                            </button>
-                             <button
-                                type="button"
-                                onClick={onConfirm}
-                                disabled={isConfirmDisabled}
-                                className={`w-full px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isConfirmDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : buttonClasses}`}
-                            >
-                                {confirmButtonText}
-                            </button>
-                        </div>
-                    )}
+                    <div className="mt-6 flex flex-col-reverse gap-3">
+                         <button
+                            type="button"
+                            onClick={onClose}
+                            className="w-full px-6 py-3 text-base font-semibold rounded-lg transition-all bg-gray-100 text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        >
+                            Отмена
+                        </button>
+                         <button
+                            type="button"
+                            onClick={onConfirm}
+                            className={`w-full px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${buttonClasses}`}
+                        >
+                            {confirmButtonText}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

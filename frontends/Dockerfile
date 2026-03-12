@@ -34,6 +34,23 @@ COPY registration_form .
 # Собираем приложение
 RUN npm run build
 
+# Используем официальный образ Node.js на основе Alpine (легковесный)
+FROM node:20-alpine as builder_add_deputy
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем файлы зависимостей
+COPY add_deputy/package.json add_deputy/package-lock.json ./
+
+# Устанавливаем зависимости
+RUN npm ci
+
+# Копируем остальные файлы проекта
+COPY add_deputy .
+
+# Собираем приложение
+RUN npm run build
 
 # Используем официальный образ Node.js на основе Alpine (легковесный)
 FROM node:18-alpine as builder_dashboard
@@ -96,6 +113,7 @@ FROM nginx:alpine
 # Копируем собранное приложение
 COPY --from=builder_host /app/dist /usr/share/nginx/html
 COPY --from=builder_reports /app/dist /usr/share/nginx/html/reports/
+COPY --from=builder_add_deputy /app/dist /usr/share/nginx/html/add_deputy/
 COPY --from=builder_dashboard /app/dist /usr/share/nginx/html/dashboard/
 COPY --from=builder_congrats /app/dist /usr/share/nginx/html/congrats/
 COPY --from=builder_registration_form /app/dist /usr/share/nginx/html/registration_form/

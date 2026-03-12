@@ -11,8 +11,6 @@ interface ConfirmationModalProps {
     children: React.ReactNode;
     confirmButtonText?: string;
     confirmButtonVariant?: 'danger' | 'primary' | 'success';
-    isConfirmDisabled?: boolean;
-    hideIcon?: boolean;
 }
 
 const useIsMobile = () => {
@@ -38,9 +36,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = (props) => {
         title, 
         children,
         confirmButtonText = 'Подтвердить',
-        confirmButtonVariant = 'primary',
-        isConfirmDisabled = false,
-        hideIcon = false
+        confirmButtonVariant = 'primary'
     } = props;
     
     const isMobile = useIsMobile();
@@ -107,12 +103,10 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = (props) => {
                 className="relative bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-6 sm:p-8 transform transition-all focus:outline-none"
             >
                  <div className="text-center">
-                    {!hideIcon && (
-                        <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${iconBg}`}>
-                            <Icon className="h-6 w-6 text-white" aria-hidden="true" />
-                        </div>
-                    )}
-                    <div className={hideIcon ? "" : "mt-3 sm:mt-5"}>
+                    <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${iconBg}`}>
+                        <Icon className="h-6 w-6 text-white" aria-hidden="true" />
+                    </div>
+                    <div className="mt-3 sm:mt-5">
                         <h2 id="modal-title" className="text-xl font-bold text-gray-900">{title}</h2>
                         <div className="mt-4 text-base text-gray-600 text-center">
                             {children}
@@ -131,8 +125,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = (props) => {
                     <button
                         type="button"
                         onClick={onConfirm}
-                        disabled={isConfirmDisabled}
-                        className={`w-full sm:w-auto px-6 py-2.5 text-base font-semibold rounded-lg transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isConfirmDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : buttonClasses}`}
+                        className={`w-full sm:w-auto px-6 py-2.5 text-base font-semibold rounded-lg transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${buttonClasses}`}
                     >
                         {confirmButtonText}
                     </button>

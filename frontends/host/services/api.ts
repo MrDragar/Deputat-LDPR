@@ -8,7 +8,8 @@ import type {
     ReportRecord,
     AdminViewData,
     CoordinatorViewData,
-    DeputyViewData
+    DeputyViewData,
+    DeputyLevel
 } from '../types';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
@@ -89,12 +90,33 @@ const refreshAuthToken = async (): Promise<boolean> => {
 };
 
 /**
+ * Custom fetch wrapper that handles token refresh on 401.
+ */
+const customFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+  let response = await fetch(url, options);
+
+  if (response.status === 401) {
+    console.log('Token expired, attempting refresh...');
+    const refreshed = await refreshAuthToken();
+    if (refreshed) {
+      // Retry with new token
+      const newHeaders = {
+        ...options.headers,
+        ...getAuthHeaders()
+      };
+      response = await fetch(url, { ...options, headers: newHeaders });
+    }
+  }
+  return response;
+};
+
+/**
  * Centralized handler for fetch API responses.
  * It checks for response.ok, parses JSON, and throws a standardized APIError on failure.
  * @param response The fetch Response object.
  * @returns The JSON data from the response.
  */
-const handleApiResponse = async (response: Response, retryCount = 0): Promise<any> => {
+const handleApiResponse = async (response: Response): Promise<any> => {
   if (response.ok) {
     // Handle 204 No Content response
     if (response.status === 204) {
@@ -108,37 +130,8 @@ const handleApiResponse = async (response: Response, retryCount = 0): Promise<an
       return null;
     }
   }
-  // Handle error responses, including expired tokens (401)
-  if (response.status === 401 && retryCount === 0) {
-    console.log('Token expired, attempting refresh...');
-    const refreshed = await refreshAuthToken();
-    
-    if (refreshed) {
-      // Retry the original request with new token
-      const originalUrl = response.url;
-      const originalOptions = await response.clone().json().catch(() => ({}));
-      const method = response.method;
 
-      // Recreate the request with new token
-      const newHeaders = getAuthHeaders();
-      // Prepare request options based on method
-      const requestOptions: RequestInit = {
-        method: method,
-        headers: newHeaders,
-      };
-      
-      // Only add body for non-GET/HEAD requests
-      if (method !== 'GET' && method !== 'HEAD' && originalOptions.body) {
-        requestOptions.body = JSON.stringify(originalOptions);
-      }
-      
-      const retryResponse = await fetch(originalUrl, requestOptions);
-      
-      return handleApiResponse(retryResponse, retryCount + 1);
-    }
-  }
-
-  // If still unauthorized after refresh or other error
+  // If still unauthorized after potential refresh in customFetch
   if (response.status === 401) {
     // The token is invalid or expired.
     // Dispatch a global event that the AuthProvider can listen for to trigger logout.
@@ -161,6 +154,7 @@ const handleApiResponse = async (response: Response, retryCount = 0): Promise<an
 
 export const api = {
   login: async (username: string, password: string): Promise<{ access: string; refresh: string }> => {
+    // Login does not use customFetch because 401 here means bad credentials, not expired token
     const response = await fetch(`${BASE_URL}/api/auth/login/`, {
       method: 'POST',
       headers: {
@@ -205,35 +199,44 @@ export const api = {
   },
 
   getForms: async (): Promise<RegistrationForm[]> => {
-    const response = await fetch(`${BASE_URL}/api/auth/registration-forms/`, {
+    const response = await customFetch(`${BASE_URL}/api/auth/registration-forms/`, {
       headers: getAuthHeaders(),
     });
     return await handleApiResponse(response);
   },
 
   getUsers: async (): Promise<User[]> => {
-    const response = await fetch(`${BASE_URL}/api/auth/users/`, {
+    const response = await customFetch(`${BASE_URL}/api/auth/users/`, {
       headers: getAuthHeaders(),
     });
     return await handleApiResponse(response);
   },
 
   getFormById: async (id: string): Promise<RegistrationForm> => {
-    const response = await fetch(`${BASE_URL}/api/auth/registration-forms/${id}/`, {
+    const response = await customFetch(`${BASE_URL}/api/auth/registration-forms/${id}/`, {
       headers: getAuthHeaders(),
     });
     return await handleApiResponse(response);
   },
   
   getUserById: async (userId: number): Promise<User> => {
-    const response = await fetch(`${BASE_URL}/api/auth/users/${userId}/`, {
+    const response = await customFetch(`${BASE_URL}/api/auth/users/${userId}/`, {
       headers: getAuthHeaders(),
     });
     return await handleApiResponse(response);
   },
 
+  updateAvailability: async (userId: number, isAvailable: boolean, reasonUnavailable: string | null): Promise<User> => {
+    const response = await customFetch(`${BASE_URL}/api/auth/users/${userId}/update-availability`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ isAvailable, reasonUnavailable }),
+    });
+    return await handleApiResponse(response);
+  },
+
   processForm: async (id: number, status: boolean, message: string): Promise<any> => {
-    const response = await fetch(`${BASE_URL}/api/auth/process_form/`, {
+    const response = await customFetch(`${BASE_URL}/api/auth/process_form/`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({
@@ -248,63 +251,63 @@ export const api = {
 
   // 1. Report Periods
   getReportPeriods: async (): Promise<ReportPeriod[]> => {
-    const response = await fetch(`${REPORT_API_URL}/report-periods/`, { headers: getAuthHeaders() });
+    const response = await customFetch(`${REPORT_API_URL}/report-periods/`, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
   getReportPeriodById: async (id: number): Promise<ReportPeriod> => {
-    const response = await fetch(`${REPORT_API_URL}/report-periods/${id}/`, { headers: getAuthHeaders() });
+    const response = await customFetch(`${REPORT_API_URL}/report-periods/${id}/`, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
   createReportPeriod: async (data: Omit<ReportPeriod, 'id'>): Promise<ReportPeriod> => {
-    const response = await fetch(`${REPORT_API_URL}/report-periods/`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) });
+    const response = await customFetch(`${REPORT_API_URL}/report-periods/`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) });
     return handleApiResponse(response);
   },
   updateReportPeriod: async (id: number, data: Omit<ReportPeriod, 'id'>): Promise<ReportPeriod> => {
-    const response = await fetch(`${REPORT_API_URL}/report-periods/${id}/`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
+    const response = await customFetch(`${REPORT_API_URL}/report-periods/${id}/`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
     return handleApiResponse(response);
   },
 
   // 2. Reports (Types)
   getReports: async (periodId?: number): Promise<Report[]> => {
     const url = periodId ? `${REPORT_API_URL}/reports/?reportPeriod=${periodId}` : `${REPORT_API_URL}/reports/`;
-    const response = await fetch(url, { headers: getAuthHeaders() });
+    const response = await customFetch(url, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
   createReport: async (data: Omit<Report, 'id' | 'themeDisplay'>): Promise<Report> => {
-    const response = await fetch(`${REPORT_API_URL}/reports/`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) });
+    const response = await customFetch(`${REPORT_API_URL}/reports/`, { method: 'POST', headers: getAuthHeaders(), body: JSON.stringify(data) });
     return handleApiResponse(response);
   },
   updateReport: async (id: number, data: Omit<Report, 'id' | 'themeDisplay'>): Promise<Report> => {
-    const response = await fetch(`${REPORT_API_URL}/reports/${id}/`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
+    const response = await customFetch(`${REPORT_API_URL}/reports/${id}/`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
     return handleApiResponse(response);
   },
   deleteReport: async (id: number): Promise<void> => {
-    const response = await fetch(`${REPORT_API_URL}/reports/${id}/`, { method: 'DELETE', headers: getAuthHeaders() });
+    const response = await customFetch(`${REPORT_API_URL}/reports/${id}/`, { method: 'DELETE', headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
   
   // 3. Region Reports
   getRegionReports: async (): Promise<RegionReport[]> => {
-    const response = await fetch(`${REPORT_API_URL}/region-reports/`, { headers: getAuthHeaders() });
+    const response = await customFetch(`${REPORT_API_URL}/region-reports/`, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
   getRegionReportById: async (id: number): Promise<RegionReport> => {
-    const response = await fetch(`${REPORT_API_URL}/region-reports/${id}/`, { headers: getAuthHeaders() });
+    const response = await customFetch(`${REPORT_API_URL}/region-reports/${id}/`, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
 
   // 4. Deputy Records
   getDeputyRecords: async (regionReportId?: number): Promise<DeputyRecord[]> => {
     const url = regionReportId ? `${REPORT_API_URL}/deputy-records/?regionReport=${regionReportId}` : `${REPORT_API_URL}/deputy-records/`;
-    const response = await fetch(url, { headers: getAuthHeaders() });
+    const response = await customFetch(url, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
   getDeputyRecordById: async (id: number): Promise<DeputyRecord> => {
-    const response = await fetch(`${REPORT_API_URL}/deputy-records/${id}/`, { headers: getAuthHeaders() });
+    const response = await customFetch(`${REPORT_API_URL}/deputy-records/${id}/`, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
   createDeputyRecord: async (data: { regionReport: number; fio: string; level: DeputyLevel; isAvailable: boolean; reason: string | null; deputy?: number | null }): Promise<DeputyRecord> => {
-    const response = await fetch(`${REPORT_API_URL}/deputy-records/`, { 
+    const response = await customFetch(`${REPORT_API_URL}/deputy-records/`, { 
         method: 'POST', 
         headers: getAuthHeaders(), 
         body: JSON.stringify(data) 
@@ -312,7 +315,7 @@ export const api = {
     return handleApiResponse(response);
   },
   updateDeputyRecord: async (id: number, data: Partial<Omit<DeputyRecord, 'id'>>): Promise<DeputyRecord> => {
-    const response = await fetch(`${REPORT_API_URL}/deputy-records/${id}/`, { 
+    const response = await customFetch(`${REPORT_API_URL}/deputy-records/${id}/`, { 
         method: 'PATCH', 
         headers: getAuthHeaders(), 
         body: JSON.stringify(data) 
@@ -320,7 +323,7 @@ export const api = {
     return handleApiResponse(response);
   },
   deleteDeputyRecord: async (id: number): Promise<void> => {
-    const response = await fetch(`${REPORT_API_URL}/deputy-records/${id}/`, { 
+    const response = await customFetch(`${REPORT_API_URL}/deputy-records/${id}/`, { 
         method: 'DELETE', 
         headers: getAuthHeaders() 
     });
@@ -329,11 +332,11 @@ export const api = {
   
   // 5. Report Records (Submissions)
   getReportRecords: async (): Promise<ReportRecord[]> => {
-    const response = await fetch(`${REPORT_API_URL}/report-records/`, { headers: getAuthHeaders() });
+    const response = await customFetch(`${REPORT_API_URL}/report-records/`, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
   updateReportRecord: async (id: number, data: Omit<ReportRecord, 'id'>): Promise<ReportRecord> => {
-    const response = await fetch(`${REPORT_API_URL}/report-records/${id}/`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
+    const response = await customFetch(`${REPORT_API_URL}/report-records/${id}/`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
     return handleApiResponse(response);
   },
 
@@ -358,19 +361,19 @@ export const api = {
   
     // 6. Federal Plan (Days)
   getFederalPlans: async (skip = 0, limit = 100): Promise<{ items: any[], total: number }> => {
-    const response = await fetch(`${FEDERAL_PLAN_URL}/?skip=${skip}&limit=${limit}`, { headers: getAuthHeaders() });
+    const response = await customFetch(`${FEDERAL_PLAN_URL}/?skip=${skip}&limit=${limit}`, { headers: getAuthHeaders() });
     return await handleApiResponse(response);
   },
   getFederalPlanById: async (id: number): Promise<any> => {
-    const response = await fetch(`${FEDERAL_PLAN_URL}/${id}`, { headers: getAuthHeaders() });
+    const response = await customFetch(`${FEDERAL_PLAN_URL}/${id}`, { headers: getAuthHeaders() });
     return await handleApiResponse(response);
   },
   getFederalPlanByDate: async (date: string): Promise<any> => {
-    const response = await fetch(`${FEDERAL_PLAN_URL}/by-date/${date}`, { headers: getAuthHeaders() });
+    const response = await customFetch(`${FEDERAL_PLAN_URL}/by-date/${date}`, { headers: getAuthHeaders() });
     return await handleApiResponse(response);
   },
   createFederalPlan: async (data: any): Promise<any> => {
-    const response = await fetch(`${FEDERAL_PLAN_URL}/`, { 
+    const response = await customFetch(`${FEDERAL_PLAN_URL}/`, { 
       method: 'POST', 
       headers: getAuthHeaders(), 
       body: JSON.stringify(data) 
@@ -378,7 +381,7 @@ export const api = {
     return await handleApiResponse(response);
   },
   updateFederalPlan: async (id: number, data: any): Promise<any> => {
-    const response = await fetch(`${FEDERAL_PLAN_URL}/${id}`, { 
+    const response = await customFetch(`${FEDERAL_PLAN_URL}/${id}`, { 
       method: 'PUT', 
       headers: getAuthHeaders(), 
       body: JSON.stringify(data) 
@@ -386,7 +389,7 @@ export const api = {
     return await handleApiResponse(response);
   },
   deleteFederalPlan: async (id: number): Promise<void> => {
-    const response = await fetch(`${FEDERAL_PLAN_URL}/${id}`, { 
+    const response = await customFetch(`${FEDERAL_PLAN_URL}/${id}`, { 
       method: 'DELETE', 
       headers: getAuthHeaders() 
     });
