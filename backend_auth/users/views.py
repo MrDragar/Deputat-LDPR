@@ -56,7 +56,7 @@ class UserDetailAPIView(APIView):
 
 
 class UserUpdateAvailabilityAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdmin]
 
     def patch(self, request, user_id):
         user_id = int(user_id)
