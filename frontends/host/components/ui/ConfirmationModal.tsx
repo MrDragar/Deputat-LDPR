@@ -104,7 +104,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = (props) => {
             <div 
                 ref={modalRef}
                 tabIndex={-1}
-                className="relative bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-6 sm:p-8 transform transition-all focus:outline-none"
+                className="relative bg-white rounded-xl shadow-2xl w-full max-w-md m-4 p-6 sm:p-8 transform transition-all outline-none"
             >
                  <div className="text-center">
                     {!hideIcon && (

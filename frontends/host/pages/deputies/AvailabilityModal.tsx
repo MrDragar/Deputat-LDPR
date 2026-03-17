@@ -14,14 +14,20 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, 
   const [isAvailable, setIsAvailable] = useState(true);
   const [reason, setReason] = useState('');
   const [isTouched, setIsTouched] = useState(false);
+  const [prevDeputyId, setPrevDeputyId] = useState<string | undefined>(undefined);
+
+  if (deputy?.userId !== prevDeputyId) {
+    setIsAvailable(deputy?.isAvailable ?? true);
+    setReason(deputy?.reasonUnavailable || '');
+    setIsTouched(false);
+    setPrevDeputyId(deputy?.userId);
+  }
 
   useEffect(() => {
-    if (deputy && isOpen) {
-      setIsAvailable(deputy.isAvailable ?? true);
-      setReason(deputy.reasonUnavailable || '');
+    if (!isOpen) {
       setIsTouched(false);
     }
-  }, [deputy, isOpen]);
+  }, [isOpen]);
 
   const handleConfirm = () => {
     if (!isAvailable && !reason.trim()) {

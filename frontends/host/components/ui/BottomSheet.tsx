@@ -89,7 +89,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
             <div
                 ref={sheetRef}
                 tabIndex={-1}
-                className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl transition-transform duration-300 ease-in-out transform focus:outline-none ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl transition-transform duration-300 ease-in-out transform outline-none ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
                 style={{ willChange: 'transform' }}
             >
                 <div className="relative p-4 sm:p-6">

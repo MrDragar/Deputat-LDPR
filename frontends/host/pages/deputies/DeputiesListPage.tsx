@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import type { User } from '../../types';
-import { Search, MoreVertical, Inbox, ChevronRight, Eye, User as UserIcon, Plus, UserCheck, UserX, RefreshCw } from 'lucide-react';
+import { Search, MoreVertical, Inbox, ChevronRight, Eye, User as UserIcon, Plus, UserCheck, UserX, RefreshCw, ShieldCheck, ShieldAlert } from 'lucide-react';
 import TextInput from '../../components/ui/TextInput';
 import CheckboxDropdown from '../../components/ui/CheckboxDropdown';
 import DeputiesListSkeleton from '../../components/skeletons/DeputiesListSkeleton';
@@ -125,6 +125,8 @@ const DeputiesListPage: React.FC = () => {
     const [selectedLevels, setSelectedLevels] = useState<string[]>(
       REPRESENTATION_LEVELS.map(level => level.label)
     );
+    const [selectedInteraction, setSelectedInteraction] = useState<string[]>(['Взаимодействующий', 'Невзаимодействующий']);
+    const [selectedVerification, setSelectedVerification] = useState<string[]>(['Верифицирован', 'Не верифицирован']);
 
     // Actions
     const [selectedDeputyForActions, setSelectedDeputyForActions] = useState<User | null>(null);
@@ -133,6 +135,7 @@ const DeputiesListPage: React.FC = () => {
 
     // Pagination / Infinite Scroll State
     const [displayCount, setDisplayCount] = useState(30);
+    const [isFabVisible, setIsFabVisible] = useState(true);
     
     // Observer ref
     const observer = useRef<IntersectionObserver | null>(null);
@@ -173,6 +176,22 @@ const DeputiesListPage: React.FC = () => {
         fetchData();
     }, [currentUser]);
     
+    useEffect(() => {
+        const mainContentArea = document.querySelector('main');
+        if (!mainContentArea) return;
+
+        const handleScroll = () => {
+            if (mainContentArea.scrollTop > 50) {
+                setIsFabVisible(false);
+            } else {
+                setIsFabVisible(true);
+            }
+        };
+
+        mainContentArea.addEventListener('scroll', handleScroll, { passive: true });
+        return () => mainContentArea.removeEventListener('scroll', handleScroll);
+    }, []);
+
     const deputies = useMemo(() => {
        return allUsers
         .filter(u => ['deputy', 'coordinator'].includes(u.role) && u.deputyForm)
@@ -187,7 +206,18 @@ const DeputiesListPage: React.FC = () => {
             const form = d.deputyForm;
             if (!form) return false;
             const fullName = `${form.lastName} ${form.firstName} ${form.middleName || ''}`.toLowerCase();
-            return (searchTerm === '' || fullName.includes(searchTerm.toLowerCase())) && selectedLevels.includes(form.representativeBodyLevel);
+            
+            const isInteracting = d.isAvailable !== false;
+            const matchesInteraction = (isInteracting && selectedInteraction.includes('Взаимодействующий')) ||
+                                       (!isInteracting && selectedInteraction.includes('Невзаимодействующий'));
+                                       
+            const isVerified = d.userId > 0;
+            const matchesVerification = (isVerified && selectedVerification.includes('Верифицирован')) ||
+                                        (!isVerified && selectedVerification.includes('Не верифицирован'));
+
+            return (searchTerm === '' || fullName.includes(searchTerm.toLowerCase())) && 
+                   selectedLevels.includes(form.representativeBodyLevel) &&
+                   matchesInteraction && matchesVerification;
         });
 
         preFiltered.forEach(d => {
@@ -195,7 +225,91 @@ const DeputiesListPage: React.FC = () => {
             if (region && counts.hasOwnProperty(region)) counts[region]++;
         });
         return counts;
-    }, [deputies, searchTerm, selectedLevels]);
+    }, [deputies, searchTerm, selectedLevels, selectedInteraction, selectedVerification]);
+
+    const levelCounts = useMemo(() => {
+        const counts: Record<string, number> = {};
+        REPRESENTATION_LEVELS.forEach(level => { counts[level.label] = 0; });
+
+        const preFiltered = deputies.filter(d => {
+            const form = d.deputyForm;
+            if (!form) return false;
+            const fullName = `${form.lastName} ${form.firstName} ${form.middleName || ''}`.toLowerCase();
+            
+            const isInteracting = d.isAvailable !== false;
+            const matchesInteraction = (isInteracting && selectedInteraction.includes('Взаимодействующий')) ||
+                                       (!isInteracting && selectedInteraction.includes('Невзаимодействующий'));
+                                       
+            const isVerified = d.userId > 0;
+            const matchesVerification = (isVerified && selectedVerification.includes('Верифицирован')) ||
+                                        (!isVerified && selectedVerification.includes('Не верифицирован'));
+
+            const matchesRegion = currentUser?.role === 'admin' ? selectedRegions.includes(form.region) : true;
+
+            return (searchTerm === '' || fullName.includes(searchTerm.toLowerCase())) && 
+                   matchesRegion && matchesInteraction && matchesVerification;
+        });
+
+        preFiltered.forEach(d => {
+            const level = d.deputyForm?.representativeBodyLevel;
+            if (level && counts.hasOwnProperty(level)) counts[level]++;
+        });
+        return counts;
+    }, [deputies, searchTerm, selectedRegions, selectedInteraction, selectedVerification, currentUser]);
+
+    const interactionCounts = useMemo(() => {
+        const counts: Record<string, number> = { 'Взаимодействующий': 0, 'Невзаимодействующий': 0 };
+
+        const preFiltered = deputies.filter(d => {
+            const form = d.deputyForm;
+            if (!form) return false;
+            const fullName = `${form.lastName} ${form.firstName} ${form.middleName || ''}`.toLowerCase();
+            
+            const isVerified = d.userId > 0;
+            const matchesVerification = (isVerified && selectedVerification.includes('Верифицирован')) ||
+                                        (!isVerified && selectedVerification.includes('Не верифицирован'));
+
+            const matchesRegion = currentUser?.role === 'admin' ? selectedRegions.includes(form.region) : true;
+            const matchesLevel = selectedLevels.includes(form.representativeBodyLevel);
+
+            return (searchTerm === '' || fullName.includes(searchTerm.toLowerCase())) && 
+                   matchesRegion && matchesLevel && matchesVerification;
+        });
+
+        preFiltered.forEach(d => {
+            const isInteracting = d.isAvailable !== false;
+            if (isInteracting) counts['Взаимодействующий']++;
+            else counts['Невзаимодействующий']++;
+        });
+        return counts;
+    }, [deputies, searchTerm, selectedRegions, selectedLevels, selectedVerification, currentUser]);
+
+    const verificationCounts = useMemo(() => {
+        const counts: Record<string, number> = { 'Верифицирован': 0, 'Не верифицирован': 0 };
+
+        const preFiltered = deputies.filter(d => {
+            const form = d.deputyForm;
+            if (!form) return false;
+            const fullName = `${form.lastName} ${form.firstName} ${form.middleName || ''}`.toLowerCase();
+            
+            const isInteracting = d.isAvailable !== false;
+            const matchesInteraction = (isInteracting && selectedInteraction.includes('Взаимодействующий')) ||
+                                       (!isInteracting && selectedInteraction.includes('Невзаимодействующий'));
+
+            const matchesRegion = currentUser?.role === 'admin' ? selectedRegions.includes(form.region) : true;
+            const matchesLevel = selectedLevels.includes(form.representativeBodyLevel);
+
+            return (searchTerm === '' || fullName.includes(searchTerm.toLowerCase())) && 
+                   matchesRegion && matchesLevel && matchesInteraction;
+        });
+
+        preFiltered.forEach(d => {
+            const isVerified = d.userId > 0;
+            if (isVerified) counts['Верифицирован']++;
+            else counts['Не верифицирован']++;
+        });
+        return counts;
+    }, [deputies, searchTerm, selectedRegions, selectedLevels, selectedInteraction, currentUser]);
 
     const filteredDeputies = useMemo(() => {
         let processed = [...deputies];
@@ -210,9 +324,18 @@ const DeputiesListPage: React.FC = () => {
             const matchesSearch = searchTerm === '' || fullName.includes(searchTerm.toLowerCase());
             const matchesRegion = currentUser?.role === 'admin' ? selectedRegions.includes(form.region) : true;
             const matchesLevel = selectedLevels.includes(form.representativeBodyLevel);
-            return matchesSearch && matchesRegion && matchesLevel;
+            
+            const isInteracting = d.isAvailable !== false;
+            const matchesInteraction = (isInteracting && selectedInteraction.includes('Взаимодействующий')) ||
+                                       (!isInteracting && selectedInteraction.includes('Невзаимодействующий'));
+                                       
+            const isVerified = d.userId > 0;
+            const matchesVerification = (isVerified && selectedVerification.includes('Верифицирован')) ||
+                                        (!isVerified && selectedVerification.includes('Не верифицирован'));
+
+            return matchesSearch && matchesRegion && matchesLevel && matchesInteraction && matchesVerification;
         });
-    }, [deputies, currentUser, coordinatorRegion, searchTerm, selectedRegions, selectedLevels]);
+    }, [deputies, currentUser, coordinatorRegion, searchTerm, selectedRegions, selectedLevels, selectedInteraction, selectedVerification]);
 
     // Reset pagination when filters change
     useEffect(() => {
@@ -258,7 +381,7 @@ const DeputiesListPage: React.FC = () => {
                     {currentUser?.role === 'admin' && (
                         <Link
                             to="/add_deputy"
-                            className="inline-flex items-center justify-center bg-blue-600 text-white font-semibold rounded-full w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 sm:rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                            className="hidden sm:inline-flex items-center justify-center bg-blue-600 text-white font-semibold rounded-full w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 sm:rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
                         >
                             <Plus size={20} />
                             <span className="hidden sm:inline sm:ml-2">Добавить депутата</span>
@@ -286,35 +409,104 @@ const DeputiesListPage: React.FC = () => {
                             />
                         )}
                     </div>
-                    <div>
-                        <p className="text-sm font-medium text-gray-700 mb-3">Уровень представительства</p>
-                        <div className="flex flex-wrap items-center gap-2">
-                           {REPRESENTATION_LEVELS.map(level => {
-                               const isSelected = selectedLevels.includes(level.label);
-                                return (
-                                    <button
-                                        key={level.value}
-                                        onClick={() => {
-                                            const newSelection = isSelected
-                                                ? selectedLevels.filter(l => l !== level.label)
-                                                : [...selectedLevels, level.label];
-                                            setSelectedLevels(newSelection);
-                                        }}
-                                        className={`px-4 py-2 text-sm font-bold rounded-full transition-all ${
-                                            isSelected ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                                        }`}
-                                    >
-                                        {level.value}
-                                    </button>
-                                )
-                           })}
+                    
+                    <div className="flex flex-col md:flex-row gap-6 md:gap-6 lg:gap-10 items-stretch">
+                        <div>
+                            <p className="text-sm font-medium text-gray-700 mb-3">Уровень представительства</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                               {REPRESENTATION_LEVELS.map(level => {
+                                   const isSelected = selectedLevels.includes(level.label);
+                                   const count = levelCounts[level.label] || 0;
+                                    return (
+                                        <button
+                                            key={level.value}
+                                            title={`${level.label} (${count})`}
+                                            onClick={() => {
+                                                const newSelection = isSelected
+                                                    ? selectedLevels.filter(l => l !== level.label)
+                                                    : [...selectedLevels, level.label];
+                                                setSelectedLevels(newSelection);
+                                            }}
+                                            className={`px-4 py-2 text-sm font-bold rounded-full transition-all ${
+                                                isSelected ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {level.value}
+                                        </button>
+                                    )
+                               })}
+                            </div>
+                        </div>
+
+                        <div className="hidden md:block w-px bg-gray-200 my-2"></div>
+
+                        <div>
+                            <p className="text-sm font-medium text-gray-700 mb-3">Уровень взаимодействия</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {[
+                                    { label: 'Взаимодействующий', icon: <UserCheck size={20} /> },
+                                    { label: 'Невзаимодействующий', icon: <UserX size={20} /> }
+                                ].map(option => {
+                                    const isSelected = selectedInteraction.includes(option.label);
+                                    const count = interactionCounts[option.label] || 0;
+                                    return (
+                                        <button
+                                            key={option.label}
+                                            title={`${option.label} (${count})`}
+                                            onClick={() => {
+                                                const newSelection = isSelected
+                                                    ? selectedInteraction.filter(l => l !== option.label)
+                                                    : [...selectedInteraction, option.label];
+                                                setSelectedInteraction(newSelection);
+                                            }}
+                                            className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${
+                                                isSelected ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {option.icon}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="hidden md:block w-px bg-gray-200 my-2"></div>
+
+                        <div>
+                            <p className="text-sm font-medium text-gray-700 mb-3">Уровень верификации</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {[
+                                    { label: 'Верифицирован', icon: <ShieldCheck size={20} /> },
+                                    { label: 'Не верифицирован', icon: <ShieldAlert size={20} /> }
+                                ].map(option => {
+                                    const isSelected = selectedVerification.includes(option.label);
+                                    const count = verificationCounts[option.label] || 0;
+                                    return (
+                                        <button
+                                            key={option.label}
+                                            title={`${option.label} (${count})`}
+                                            onClick={() => {
+                                                const newSelection = isSelected
+                                                    ? selectedVerification.filter(l => l !== option.label)
+                                                    : [...selectedVerification, option.label];
+                                                setSelectedVerification(newSelection);
+                                            }}
+                                            className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${
+                                                isSelected ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            }`}
+                                        >
+                                            {option.icon}
+                                        </button>
+                                    )
+                                })}
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             
             {/* Desktop Table View */}
-            <div className="hidden md:block">
+            <div className="hidden lg:block">
                 {visibleDeputies.length > 0 ? (
                     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-visible">
                         <div className="overflow-visible">
@@ -335,9 +527,14 @@ const DeputiesListPage: React.FC = () => {
                                         const form = deputy.deputyForm!;
                                         return (
                                             <tr key={deputy.userId} className="bg-white hover:bg-slate-50/50 transition-colors group">
-                                                <td className={`px-6 py-5 font-bold text-center ${deputy.userId < 0 ? 'text-red-500' : 'text-gray-400'}`}>{index + 1}</td>
-                                                <th scope="row" className={`px-6 py-5 font-medium whitespace-nowrap ${deputy.userId < 0 ? 'text-red-500' : 'text-gray-900'}`}>
-                                                    {`${form.lastName} ${form.firstName} ${form.middleName || ''}`}
+                                                <td className={`px-6 py-5 font-bold text-center text-gray-400`}>{index + 1}</td>
+                                                <th scope="row" className={`px-6 py-5 font-medium whitespace-nowrap text-gray-900`}>
+                                                    <div className="flex items-center gap-2">
+                                                        {`${form.lastName} ${form.firstName} ${form.middleName || ''}`}
+                                                        {deputy.userId > 0 && (
+                                                            <ShieldCheck size={18} className="text-blue-500 flex-shrink-0" title="Верифицирован" />
+                                                        )}
+                                                    </div>
                                                 </th>
                                                 <td className="px-6 py-5 text-gray-600 font-medium">{form.region}</td>
                                                 <td className="px-6 py-5 text-gray-500 font-medium">{form.partyRole}</td>
@@ -382,7 +579,7 @@ const DeputiesListPage: React.FC = () => {
             </div>
 
             {/* Mobile List View */}
-            <div className="md:hidden">
+            <div className="lg:hidden">
                 {visibleDeputies.length > 0 ? (
                     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
                         <ul className="divide-y divide-gray-100">
@@ -394,13 +591,18 @@ const DeputiesListPage: React.FC = () => {
                                             onClick={() => setSelectedDeputyForActions(deputy)}
                                             className="w-full flex items-start gap-4 p-5 text-left active:bg-gray-50 transition-colors"
                                         >
-                                            <div className={`flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full font-bold text-sm ${deputy.userId < 0 ? 'bg-red-50 text-red-500' : 'bg-slate-100 text-slate-500'}`}>
+                                            <div className={`flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full font-bold text-sm bg-slate-100 text-slate-500`}>
                                                 {index + 1}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className={`text-base font-medium truncate leading-tight ${deputy.userId < 0 ? 'text-red-500' : 'text-gray-900'}`}>
-                                                    {form.lastName} {form.firstName} {form.middleName}
-                                                </p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className={`text-base font-medium truncate leading-tight text-gray-900`}>
+                                                        {form.lastName} {form.firstName} {form.middleName}
+                                                    </p>
+                                                    {deputy.userId > 0 && (
+                                                        <ShieldCheck size={16} className="text-blue-500 flex-shrink-0" title="Верифицирован" />
+                                                    )}
+                                                </div>
                                                 <div className="mt-2 space-y-1 text-sm">
                                                     <p className="text-gray-600 font-medium">
                                                         <span className="text-gray-400 font-normal">Регион:</span> {form.region}
@@ -493,6 +695,17 @@ const DeputiesListPage: React.FC = () => {
                 deputy={availabilityModalDeputy}
                 onConfirm={handleAvailabilityChange}
             />
+
+            {/* Mobile FAB */}
+            {currentUser?.role === 'admin' && (
+                <Link
+                    to="/add_deputy"
+                    className={`sm:hidden fixed bottom-6 right-6 z-30 flex items-center justify-center h-14 w-14 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-transform duration-300 ease-in-out hover:scale-105 ${isFabVisible ? 'translate-y-0' : 'translate-y-24'}`}
+                    aria-label="Добавить депутата"
+                >
+                    <Plus className="h-7 w-7" />
+                </Link>
+            )}
         </div>
     );
 };

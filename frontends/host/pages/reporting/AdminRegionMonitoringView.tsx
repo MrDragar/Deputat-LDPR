@@ -4,7 +4,7 @@ import { api } from '../../services/api';
 import type { ReportPeriod, Report, ReportRecord, DeputyRecord, ReportTheme, DeputyLevel } from '../../types';
 import { 
   ArrowLeft, MapPin, Users, Link as LinkIcon, 
-  AlertCircle, Calendar, Inbox, Loader2, Plus, Trash2, X, ShieldAlert, ShieldCheck, ExternalLink
+  AlertCircle, Calendar, Inbox, Loader2, Plus, Trash2, X, UserX, UserCheck, ExternalLink
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
@@ -277,7 +277,7 @@ const AdminRegionMonitoringView: React.FC = () => {
                                                         className={`p-1 rounded transition-all hover:scale-110 ${deputy.isAvailable ? 'text-green-500 hover:bg-green-50' : 'text-orange-500 hover:bg-orange-50'}`}
                                                         title={deputy.isAvailable ? "Сделать невзаимодействующим" : "Сделать обязанным сдавать отчеты"}
                                                     >
-                                                        {deputy.isAvailable ? <ShieldCheck size={16} /> : <ShieldAlert size={16} />}
+                                                        {deputy.isAvailable ? <UserCheck size={16} /> : <UserX size={16} />}
                                                     </button>
                                                     {deputy.deputy === null && (
                                                         <button 
