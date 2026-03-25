@@ -75,7 +75,7 @@ const Select: React.FC<SelectProps> = ({ label, name, id, options, value, onChan
     handleBlur();
   };
 
-  const portalRoot = document.getElementById('add-deputy-root');
+  const portalRoot = document.getElementById('reports-view-root');
 
   if (isMobile && portalRoot) {
     return (

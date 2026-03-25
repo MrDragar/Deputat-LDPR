@@ -74,7 +74,7 @@ export function DateRangePicker({ date, onDateChange }: DateRangePickerProps) {
     </span>
   );
 
-  const portalRoot = document.getElementById('add-deputy-root') || document.body;
+  const portalRoot = document.getElementById('reports-view-root') || document.body;
 
   return (
     <div className="relative w-full h-[42px]" ref={wrapperRef}>

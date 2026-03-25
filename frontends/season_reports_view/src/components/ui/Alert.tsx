@@ -42,7 +42,7 @@ const alertConfig = {
 
 const Alert: React.FC<AlertProps> = ({ type, title, message, onClose, duration = 5000, className = '' }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const portalRoot = document.getElementById('add-deputy-root');
+  const portalRoot = document.getElementById('reports-view-root');
 
   const handleClose = React.useCallback(() => {
     setIsVisible(false);

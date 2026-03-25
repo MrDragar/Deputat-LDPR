@@ -41,18 +41,18 @@ export const AuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" id='reports-view-root'>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (hasToken) {
-    return <>{children}</>;
+    return <div id='reports-view-root'>{children}</div>;
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4" id='reports-view-root'>
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center text-gray-900">Авторизация</h1>
         {error && (

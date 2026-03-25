@@ -45,7 +45,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setCollapsed, isMobileOp
         { to: '/deputies', text: 'Депутаты', icon: Users, roles: ['admin', 'coordinator'], external: false },
         { to: '/applications', text: 'Заявки', icon: FileText, roles: ['admin'], external: false },
         { to: '/reports', text: 'Отчетность', icon: BarChart3, roles: ['admin', 'coordinator', 'deputy'], external: false },
-        { to: '/season_reports_view', text: 'Сезонные отчеты', icon: PieChart, roles: ['admin'], external: false },
+        { to: '/seasonal_report', text: 'Сезонные отчеты', icon: PieChart, roles: ['admin'], external: false },
         { to: '/my-profile', text: 'Моя анкета', icon: UserIcon, roles: ['deputy', 'coordinator'], external: false },
       ]
     },

@@ -34,7 +34,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({ isOpen, onClose, 
         return null;
     }
     
-    const portalRoot = document.getElementById('add-deputy-root') || document.body;
+    const portalRoot = document.getElementById('reports-view-root') || document.body;
     if (!portalRoot) return null;
 
     return ReactDOM.createPortal(

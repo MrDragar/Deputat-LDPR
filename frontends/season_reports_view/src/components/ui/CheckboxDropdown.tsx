@@ -60,7 +60,7 @@ const CheckboxDropdown: React.FC<CheckboxDropdownProps> = ({ title, options, sel
     );
   }, [options, searchQuery]);
 
-  const portalRoot = document.getElementById('add-deputy-root');
+  const portalRoot = document.getElementById('reports-view-root');
 
   const renderListItems = (mobile: boolean) => (
     filteredOptions.length > 0 ? filteredOptions.map((option, index) => {

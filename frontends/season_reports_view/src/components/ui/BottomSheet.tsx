@@ -24,7 +24,7 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
   icon
 }) => {
   const sheetRef = useRef<HTMLDivElement>(null);
-  const portalRoot = typeof document !== 'undefined' ? document.getElementById('add-deputy-root') : null;
+  const portalRoot = typeof document !== 'undefined' ? document.getElementById('reports-view-root') : null;
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

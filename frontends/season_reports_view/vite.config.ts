@@ -15,7 +15,7 @@ const sharedDependencies = [
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
-      base: "/season_reports_view",
+      base: "/seasonal_report",
     plugins: [
         react(), tailwindcss(),
           federation({
