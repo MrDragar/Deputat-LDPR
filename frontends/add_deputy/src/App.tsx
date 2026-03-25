@@ -5,6 +5,7 @@ import Select from './components/ui/Select';
 import Alert from './components/ui/Alert';
 import { initialFormData, REGIONS, REPRESENTATIVE_BODY_LEVELS } from './constants';
 import { api } from './api';
+import './index.css';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'single' | 'json'>('single');

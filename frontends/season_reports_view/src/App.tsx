@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthWrapper } from './AuthWrapper';
 import DeputyReportsPage from './pages/DeputyReportsPage';
 import ReportViewPage from './pages/ReportViewPage';
+import './index.css';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
