@@ -41,7 +41,14 @@ export const AuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50" id='reports-view-root'>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50" id='reports-view-root'
+           style={{
+        isolation: 'isolate',
+        position: 'relative',
+        display: 'block',
+        width: '100%',
+        height: '100%',
+      }}>
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -52,7 +59,15 @@ export const AuthWrapper: React.FC<{ children: React.ReactNode }> = ({ children 
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4" id='reports-view-root'>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4" id='reports-view-root' 
+          style={{
+        isolation: 'isolate',
+        position: 'relative',
+        display: 'block',
+        width: '100%',
+        height: '100%',
+      }}
+    >
       <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
         <h1 className="text-2xl font-bold mb-6 text-center text-gray-900">Авторизация</h1>
         {error && (

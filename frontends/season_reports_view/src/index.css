@@ -1,30 +1,36 @@
-@layer reset {
-  #reports-view-root,
-  #reports-view-root * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-  }
-
-  #reports-view-root {
-    display: block;
-  }
-}
-@import "tailwindcss";
+@import "tailwindcss/theme";
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
 @config "../tailwind.config.js";
 
-@layer utilities {
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: #cbd5e1;
-    border-radius: 10px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background-color: #94a3b8;
-  }
+#reports-view-root svg,
+#reports-view-root .no-transform {
+  /* Сбрасываем переменные, которые хост пытается навязать */
+  --tw-translate-x: 0;
+  --tw-translate-y: 0;
+  --tw-rotate: 0;
+  --tw-skew-x: 0;
+  --tw-skew-y: 0;
+  --tw-scale-x: 1;
+  --tw-scale-y: 1;
+
+  /* Принудительно возвращаем transform в исходное состояние,
+     если хост его переопределил глобально */
+  transform: none !important;
 }
+
+@layer custom-utilities {
+  #reports-view-root {
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background-color: #cbd5e1;
+      border-radius: 10px;
+    }
+  }
+
+}/* Оборачиваем ваши кастомные стили, чтобы они тоже были внутри слоя */
