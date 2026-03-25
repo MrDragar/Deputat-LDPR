@@ -21,3 +21,9 @@ declare module 'add_deputy/*' {
   const content: ComponentType<any>;
   export default content;
 }
+
+declare module 'season_reports_view/*' {
+  import { ComponentType } from 'react';
+  const content: ComponentType<any>;
+  export default content;
+}

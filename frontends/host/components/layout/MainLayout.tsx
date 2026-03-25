@@ -1,11 +1,25 @@
-import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
 
 const MainLayout: React.FC = () => {
   const [isCollapsed, setCollapsed] = useState(false);
   const [isMobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    const currentPath = location.pathname;
+    const lastPath = sessionStorage.getItem('last_path');
+
+    if (lastPath && lastPath.startsWith('/deputies') && !currentPath.startsWith('/deputies')) {
+        sessionStorage.removeItem('deputies_list_data');
+        sessionStorage.removeItem('deputies_list_filters');
+        sessionStorage.removeItem('deputies_coordinator_region');
+    }
+
+    sessionStorage.setItem('last_path', currentPath);
+  }, [location.pathname]);
 
   return (
     // Используем h-[100dvh] вместо h-screen.

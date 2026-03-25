@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
                 dashboard: `/dashboard/assets/remoteEntry.js?v=${version}`,
                 congrats: `/congrats/assets/remoteEntry.js?v=${version}`,
                 add_deputy: `/add_deputy/assets/remoteEntry.js?v=${version}`,
+                season_reports_view: `/season_reports_view/assets/remoteEntry.js?v=${version}`,
               },
               shared: ['react', 'react-dom', 'react-router-dom', 'lucide-react', 'recharts'],
           }),

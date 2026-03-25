@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import type { User } from '../../types';
-import { Search, MoreVertical, Inbox, ChevronRight, Eye, User as UserIcon, Plus, UserCheck, UserX, RefreshCw, ShieldCheck, ShieldAlert } from 'lucide-react';
+import { X, Search, MoreVertical, Inbox, ChevronRight, Eye, User as UserIcon, Plus, UserCheck, UserX, RefreshCw, ShieldCheck, ShieldAlert, ArrowUpDown } from 'lucide-react';
 import TextInput from '../../components/ui/TextInput';
+import Select from '../../components/ui/Select';
 import CheckboxDropdown from '../../components/ui/CheckboxDropdown';
 import DeputiesListSkeleton from '../../components/skeletons/DeputiesListSkeleton';
-import BottomSheet from '../../components/ui/BottomSheet';
 import { useOutsideClick } from '../../hooks/useOutsideClick';
 import AvailabilityModal from './AvailabilityModal';
 
@@ -26,7 +27,7 @@ const ALL_REGIONS: string[] = [
     'Республика Тыва', 'Республика Хакасия', 'Ростовская область', 'Рязанская область', 'Самарская область', 'Санкт-Петербург',
     'Саратовская область', 'Сахалинская область', 'Свердловская область', 'Севастополь', 'Смоленская область', 'Ставропольский край',
     'Тамбовская область', 'Тверская область', 'Томская область', 'Тульская область', 'Тюменская область', 'Удмуртская Республика',
-    'Ульяновская область', 'Хабаровский край', 'Ханты-мансийский автономный округ-Югра', 'Херсонская область', 'Челябинская область',
+    'Ульяновская область', 'Хабаровский край', 'Ханты-Мансийский автономный округ-Югра', 'Херсонская область', 'Челябинская область',
     'Чеченская Республика', 'Чувашская Республика', 'Чукотский автономный округ', 'Ямало-Ненецкий автономный округ', 'Ярославская область'
 ];
 
@@ -36,6 +37,13 @@ const REPRESENTATION_LEVELS = [
     { value: 'ЗС', label: 'ЗС' },
     { value: 'АЦС', label: 'АЦС' },
     { value: 'МСУ', label: 'МСУ' }
+];
+
+const sortOptions = [
+    { value: 'date_desc', label: 'Сначала новые' },
+    { value: 'date_asc', label: 'Сначала старые' },
+    { value: 'name_asc', label: 'По имени (А-Я)' },
+    { value: 'name_desc', label: 'По имени (Я-А)' },
 ];
 
 const levelDisplayMap = REPRESENTATION_LEVELS.reduce((acc, level) => {
@@ -112,21 +120,40 @@ const DesktopActionMenu: React.FC<{
 const DeputiesListPage: React.FC = () => {
     const { user: currentUser } = useAuth();
     const navigate = useNavigate();
-    const [allUsers, setAllUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
+    
+    const getSavedState = (key: string, defaultValue: any) => {
+        try {
+            const saved = sessionStorage.getItem(key);
+            return saved ? JSON.parse(saved) : defaultValue;
+        } catch {
+            return defaultValue;
+        }
+    };
+
+    const initialUsers = getSavedState('deputies_list_data', []);
+    const [allUsers, setAllUsers] = useState<User[]>(initialUsers);
+    const [loading, setLoading] = useState(initialUsers.length === 0);
     const [error, setError] = useState<string | null>(null);
-    const [coordinatorRegion, setCoordinatorRegion] = useState<string | null>(null);
+    const [coordinatorRegion, setCoordinatorRegion] = useState<string | null>(() => sessionStorage.getItem('deputies_coordinator_region'));
 
     // Filters
-    const [searchTerm, setSearchTerm] = useState('');
+    const savedFilters = getSavedState('deputies_list_filters', {});
+    const [searchTerm, setSearchTerm] = useState<string>(savedFilters.searchTerm ?? '');
     const [selectedRegions, setSelectedRegions] = useState<string[]>(
-        currentUser?.role === 'admin' ? [...ALL_REGIONS] : []
+        savedFilters.selectedRegions ?? (currentUser?.role === 'admin' ? [...ALL_REGIONS] : [])
     );
     const [selectedLevels, setSelectedLevels] = useState<string[]>(
-      REPRESENTATION_LEVELS.map(level => level.label)
+        savedFilters.selectedLevels ?? REPRESENTATION_LEVELS.map(level => level.label)
     );
-    const [selectedInteraction, setSelectedInteraction] = useState<string[]>(['Взаимодействующий', 'Невзаимодействующий']);
-    const [selectedVerification, setSelectedVerification] = useState<string[]>(['Верифицирован', 'Не верифицирован']);
+    const [selectedInteraction, setSelectedInteraction] = useState<string[]>(
+        savedFilters.selectedInteraction ?? ['Взаимодействующий', 'Невзаимодействующий']
+    );
+    const [selectedVerification, setSelectedVerification] = useState<string[]>(
+        savedFilters.selectedVerification ?? ['Верифицирован', 'Не верифицирован']
+    );
+    const [sortOption, setSortOption] = useState<string>(
+        savedFilters.sortOption ?? 'date_desc'
+    );
 
     // Actions
     const [selectedDeputyForActions, setSelectedDeputyForActions] = useState<User | null>(null);
@@ -134,7 +161,7 @@ const DeputiesListPage: React.FC = () => {
     const [availabilityModalDeputy, setAvailabilityModalDeputy] = useState<User | null>(null);
 
     // Pagination / Infinite Scroll State
-    const [displayCount, setDisplayCount] = useState(30);
+    const [displayCount, setDisplayCount] = useState<number>(savedFilters.displayCount ?? 30);
     const [isFabVisible, setIsFabVisible] = useState(true);
     
     // Observer ref
@@ -155,19 +182,36 @@ const DeputiesListPage: React.FC = () => {
     }, [loading]);
 
     useEffect(() => {
+        const filtersToSave = {
+            searchTerm,
+            selectedRegions,
+            selectedLevels,
+            selectedInteraction,
+            selectedVerification,
+            displayCount,
+            sortOption
+        };
+        sessionStorage.setItem('deputies_list_filters', JSON.stringify(filtersToSave));
+    }, [searchTerm, selectedRegions, selectedLevels, selectedInteraction, selectedVerification, displayCount, sortOption]);
+
+    useEffect(() => {
         const fetchData = async () => {
             try {
                 const usersData = await api.getUsers();
                 setAllUsers(usersData);
+                sessionStorage.setItem('deputies_list_data', JSON.stringify(usersData));
                 
                 if (currentUser?.role === 'coordinator') {
                     const coordinatorData = await api.getUserById(currentUser.user_id);
                     if (coordinatorData.deputyForm?.region) {
                         setCoordinatorRegion(coordinatorData.deputyForm.region);
+                        sessionStorage.setItem('deputies_coordinator_region', coordinatorData.deputyForm.region);
                     }
                 }
             } catch (err) {
-                setError('Не удалось загрузить список депутатов.');
+                if (allUsers.length === 0) {
+                    setError('Не удалось загрузить список депутатов.');
+                }
                 console.error(err);
             } finally {
                 setLoading(false);
@@ -317,7 +361,7 @@ const DeputiesListPage: React.FC = () => {
             processed = processed.filter(d => d.deputyForm?.region === coordinatorRegion);
         }
 
-        return processed.filter(d => {
+        processed = processed.filter(d => {
             const form = d.deputyForm;
             if (!form) return false;
             const fullName = `${form.lastName} ${form.firstName} ${form.middleName || ''}`.toLowerCase();
@@ -335,14 +379,45 @@ const DeputiesListPage: React.FC = () => {
 
             return matchesSearch && matchesRegion && matchesLevel && matchesInteraction && matchesVerification;
         });
-    }, [deputies, currentUser, coordinatorRegion, searchTerm, selectedRegions, selectedLevels, selectedInteraction, selectedVerification]);
+
+        // Sorting
+        switch (sortOption) {
+            case 'date_asc':
+                processed.sort((a, b) => new Date(a.dateJoined).getTime() - new Date(b.dateJoined).getTime());
+                break;
+            case 'date_desc':
+                processed.sort((a, b) => new Date(b.dateJoined).getTime() - new Date(a.dateJoined).getTime());
+                break;
+            case 'name_asc':
+                processed.sort((a, b) => {
+                    const nameA = `${a.deputyForm?.lastName} ${a.deputyForm?.firstName} ${a.deputyForm?.middleName || ''}`.trim();
+                    const nameB = `${b.deputyForm?.lastName} ${b.deputyForm?.firstName} ${b.deputyForm?.middleName || ''}`.trim();
+                    return nameA.localeCompare(nameB);
+                });
+                break;
+            case 'name_desc':
+                processed.sort((a, b) => {
+                    const nameA = `${a.deputyForm?.lastName} ${a.deputyForm?.firstName} ${a.deputyForm?.middleName || ''}`.trim();
+                    const nameB = `${b.deputyForm?.lastName} ${b.deputyForm?.firstName} ${b.deputyForm?.middleName || ''}`.trim();
+                    return nameB.localeCompare(nameA);
+                });
+                break;
+            default:
+                break;
+        }
+
+        return processed;
+    }, [deputies, currentUser, coordinatorRegion, searchTerm, selectedRegions, selectedLevels, selectedInteraction, selectedVerification, sortOption]);
 
     // Reset pagination when filters change
+    const isFirstRender = useRef(true);
     useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
         setDisplayCount(30);
-        // Scroll to top if filters change (optional, but good UX)
-        // window.scrollTo(0, 0); 
-    }, [filteredDeputies]);
+    }, [searchTerm, selectedRegions, selectedLevels, selectedInteraction, selectedVerification, sortOption]);
 
     const visibleDeputies = useMemo(() => {
         return filteredDeputies.slice(0, displayCount);
@@ -391,7 +466,7 @@ const DeputiesListPage: React.FC = () => {
 
                 <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                        <div className="md:col-span-2">
+                        <div className={currentUser?.role === 'admin' ? "md:col-span-1" : "md:col-span-2"}>
                              <TextInput
                                 name="search" type="text" placeholder="Поиск по ФИО..." value={searchTerm}
                                 onChange={(_, val) => setSearchTerm(val)}
@@ -399,14 +474,26 @@ const DeputiesListPage: React.FC = () => {
                                 className="h-[50px]"
                             />
                         </div>
-                         {currentUser?.role === 'admin' && (
-                            <CheckboxDropdown
-                                title=""
-                                options={ALL_REGIONS}
-                                selectedOptions={selectedRegions}
-                                onChange={setSelectedRegions}
-                                counts={regionCounts}
+                        <div className="md:col-span-1">
+                            <Select 
+                                name="sort"
+                                value={sortOption}
+                                onChange={(_, val) => setSortOption(val)}
+                                options={sortOptions}
+                                icon={<ArrowUpDown className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />}
+                                className="h-[50px]"
                             />
+                        </div>
+                         {currentUser?.role === 'admin' && (
+                            <div className="md:col-span-1">
+                                <CheckboxDropdown
+                                    title=""
+                                    options={ALL_REGIONS}
+                                    selectedOptions={selectedRegions}
+                                    onChange={setSelectedRegions}
+                                    counts={regionCounts}
+                                />
+                            </div>
                         )}
                     </div>
                     
@@ -646,47 +733,68 @@ const DeputiesListPage: React.FC = () => {
             )}
 
             {/* Mobile Actions Bottom Sheet */}
-            <BottomSheet
-                isOpen={!!selectedDeputyForActions}
-                onClose={() => setSelectedDeputyForActions(null)}
-                title="Выберите действие"
-                hideIcon={true}
-                hideActions={true}
-            >
-                <div className="border-b border-gray-200 mb-5 -mt-1 -mx-4 sm:-mx-6" />
-                <div className="pb-4">
-                    <p className="text-lg font-medium text-gray-900 text-center mb-6">
-                        {selectedDeputyForActions?.deputyForm?.lastName} {selectedDeputyForActions?.deputyForm?.firstName} {selectedDeputyForActions?.deputyForm?.middleName}
-                    </p>
-                    <div className="flex flex-col gap-2">
-                        <button
-                            onClick={() => {
-                                if (selectedDeputyForActions) {
-                                    navigate(`/deputies/${selectedDeputyForActions.userId}`);
-                                    setSelectedDeputyForActions(null);
-                                }
-                            }}
-                            className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition-colors shadow-sm"
-                        >
-                            <Eye size={20} />
-                            Посмотреть анкету
-                        </button>
-                        
-                        {currentUser?.role === 'admin' && (
-                            <button
-                                onClick={() => {
-                                    setAvailabilityModalDeputy(selectedDeputyForActions);
-                                    setSelectedDeputyForActions(null);
-                                }}
-                                className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl font-medium transition-colors shadow-sm"
-                            >
-                                <RefreshCw size={20} className="text-gray-500" />
-                                Изменить взаимодействие
-                            </button>
-                        )}
+            {selectedDeputyForActions && createPortal(
+              <div className="fixed inset-0 z-[100] flex flex-col justify-end">
+                <div 
+                  className="absolute inset-0 bg-black/40 transition-opacity animate-in fade-in duration-300" 
+                  onClick={() => setSelectedDeputyForActions(null)} 
+                />
+                <div className="relative bg-white rounded-t-2xl shadow-[0_-10px_40px_rgba(0,0,0,0.1)] w-full animate-in slide-in-from-bottom duration-300">
+                  
+                  {/* Шапка с заголовком и ФИО */}
+                  <div className="pt-5 pb-4 px-4 border-b border-gray-100">
+                    {/* Контейнер для заголовка и крестика (строго на одной линии) */}
+                    <div className="relative flex items-center justify-center">
+                      <h2 className="text-[20px] font-bold text-gray-900">Выберите действие</h2>
+                      <button 
+                        onClick={() => setSelectedDeputyForActions(null)} 
+                        className="absolute right-0 -mr-2 p-2 text-gray-400 hover:bg-gray-100 rounded-full cursor-pointer transition-colors"
+                      >
+                        <X className="h-6 w-6" />
+                      </button>
                     </div>
+                    {/* ФИО Депутата (ниже, medium начертание, серый цвет) */}
+                    <div className="mt-3 text-center px-4">
+                      <p className="text-[15px] font-medium text-gray-500 leading-tight">
+                        {selectedDeputyForActions.deputyForm?.lastName} {selectedDeputyForActions.deputyForm?.firstName} {selectedDeputyForActions.deputyForm?.middleName}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Кнопки действий */}
+                  <div className="flex flex-col py-2">
+                    <button 
+                    onClick={() => {
+                        navigate(`/deputies/${selectedDeputyForActions.userId}`);
+                        setSelectedDeputyForActions(null);
+                    }} 
+                    className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer text-left w-full"
+                    >
+                    <Eye className="h-7 w-7 text-blue-600 shrink-0" />
+                    <span className="text-[16px] font-semibold text-gray-900">Посмотреть анкету</span>
+                    </button>
+                    
+                    {currentUser?.role === 'admin' && (
+                      <>
+                        <div className="h-px bg-gray-100 mx-5" />
+                        <button 
+                    onClick={() => {
+                        setAvailabilityModalDeputy(selectedDeputyForActions);
+                        setSelectedDeputyForActions(null);
+                    }} 
+                    className="flex items-center gap-4 px-5 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer text-left w-full"
+                    >
+                    <RefreshCw className="h-7 w-7 text-blue-600 shrink-0" />
+                    <span className="text-[16px] font-semibold text-gray-900">Изменить взаимодействие</span>
+                    </button>
+                      </>
+                    )}
+                  </div>
+                  
                 </div>
-            </BottomSheet>
+              </div>,
+              document.body
+            )}
 
             {/* Availability Modal */}
             <AvailabilityModal

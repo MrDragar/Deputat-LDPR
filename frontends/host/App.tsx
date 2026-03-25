@@ -22,6 +22,7 @@ const AutumnReport = React.lazy(() => import('reports/App'));
 const DashboardApp = React.lazy(() => import('dashboard/App'));
 const CongratsApp = React.lazy(() => import('congrats/App'));
 const AddDeputyApp = React.lazy(() => import('add_deputy/App'));
+const SeasonReportsViewApp = React.lazy(() => import('season_reports_view/App'));
 
 // Wrapper compoent to scope the Federal Plan Context
 const FederalPlanWrapper = () => {
@@ -134,6 +135,14 @@ const App: React.FC = () => {
                   element={
                     <ProtectedRoute roles={['admin']}>
                       <AddDeputyApp />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="season_reports_view"
+                  element={
+                    <ProtectedRoute roles={['admin']}>
+                      <SeasonReportsViewApp/>
                     </ProtectedRoute>
                   }
                 />

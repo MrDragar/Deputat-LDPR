@@ -19,9 +19,10 @@ interface SelectProps {
     error?: string;
     required?: boolean;
     icon?: React.ReactNode;
+    className?: string;
 }
 
-const Select: React.FC<SelectProps> = ({ label, name, id, options, value, onChange, onBlur, error, required, icon }) => {
+const Select: React.FC<SelectProps> = ({ label, name, id, options, value, onChange, onBlur, error, required, icon, className }) => {
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef<HTMLDivElement>(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -96,7 +97,7 @@ const Select: React.FC<SelectProps> = ({ label, name, id, options, value, onChan
                       type="button"
                       onClick={() => setIsOpen(true)}
                       className={`w-full py-3 pr-4 text-left bg-white border rounded-md shadow-sm flex justify-between items-center text-base
-                      focus:outline-none focus:ring-2 ${error ? 'border-red-500 ring-red-500' : 'border-gray-300 ring-blue-500 focus:border-blue-500'} ${icon ? 'pl-12' : 'pl-4'}`}
+                      focus:outline-none focus:ring-2 ${error ? 'border-red-500 ring-red-500' : 'border-gray-300 ring-blue-500 focus:border-blue-500'} ${icon ? 'pl-12' : 'pl-4'} ${className || ''}`}
                   >
                       <span className={value ? 'text-gray-900' : 'text-gray-500'}>
                           {selectedLabel}
@@ -140,7 +141,7 @@ const Select: React.FC<SelectProps> = ({ label, name, id, options, value, onChan
                     type="button"
                     onClick={handleToggle}
                     className={`w-full py-3 pr-4 text-left bg-white border rounded-md shadow-sm flex justify-between items-center text-base
-                    focus:outline-none focus:ring-2 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} ${icon ? 'pl-12' : 'pl-4'}`}
+                    focus:outline-none focus:ring-2 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} ${icon ? 'pl-12' : 'pl-4'} ${className || ''}`}
                 >
                     <span className={value ? 'text-gray-900' : 'text-gray-500'}>
                         {selectedLabel}

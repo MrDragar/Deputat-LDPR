@@ -53,6 +53,24 @@ COPY add_deputy .
 RUN npm run build
 
 # Используем официальный образ Node.js на основе Alpine (легковесный)
+FROM node:20-alpine as builder_season_reports_view
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем файлы зависимостей
+COPY season_reports_view/package.json season_reports_view/package-lock.json ./
+
+# Устанавливаем зависимости
+RUN npm ci
+
+# Копируем остальные файлы проекта
+COPY season_reports_view .
+
+# Собираем приложение
+RUN npm run build
+
+# Используем официальный образ Node.js на основе Alpine (легковесный)
 FROM node:18-alpine as builder_dashboard
 
 # Устанавливаем рабочую директорию
@@ -114,6 +132,7 @@ FROM nginx:alpine
 COPY --from=builder_host /app/dist /usr/share/nginx/html
 COPY --from=builder_reports /app/dist /usr/share/nginx/html/reports/
 COPY --from=builder_add_deputy /app/dist /usr/share/nginx/html/add_deputy/
+COPY --from=builder_season_reports_view /app/dist /usr/share/nginx/html/season_reports_view/
 COPY --from=builder_dashboard /app/dist /usr/share/nginx/html/dashboard/
 COPY --from=builder_congrats /app/dist /usr/share/nginx/html/congrats/
 COPY --from=builder_registration_form /app/dist /usr/share/nginx/html/registration_form/
