@@ -1,8 +1,10 @@
 @import "tailwindcss/theme";
-@import "tailwindcss/preflight";
 @import "tailwindcss/utilities";
 @config "../tailwind.config.js";
 
+@layer reports-layer {
+  @import "tailwindcss/preflight";
+}
 #reports-view-root svg,
 #reports-view-root .no-transform {
   /* Сбрасываем переменные, которые хост пытается навязать */
