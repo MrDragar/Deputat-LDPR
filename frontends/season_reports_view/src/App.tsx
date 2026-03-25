@@ -17,15 +17,17 @@ function ScrollToTop() {
 
 export default function App({ show_side_bar = false }: { show_side_bar?: boolean }) {
   return (
-    <Router>
+      <>
+    {/*// <Router>*/}
       <ScrollToTop />
       <AuthWrapper>
         <Routes>
-          <Route path="/" element={<Navigate to="/seasonal_report" replace />} />
-          <Route path="/seasonal_report" element={<DeputyReportsPage showSidebar={show_side_bar} />} />
-          <Route path="/seasonal_report/view_report/:id" element={<ReportViewPage showSidebar={show_side_bar} />} />
+          {/*<Route path="/" element={<Navigate to="seasonal_report" replace />} />*/}
+          <Route index element={<DeputyReportsPage showSidebar={show_side_bar} />} />
+          <Route path="view_report/:id" element={<ReportViewPage showSidebar={show_side_bar} />} />
         </Routes>
       </AuthWrapper>
-    </Router>
+    {/*// </Router>*/}
+      </>
   );
 }

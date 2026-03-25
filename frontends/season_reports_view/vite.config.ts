@@ -9,6 +9,7 @@ const sharedDependencies = [
   'react',
   'react-dom',
   'lucide-react',
+  'react-router-dom'
 ]
 
 

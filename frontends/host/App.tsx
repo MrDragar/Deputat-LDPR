@@ -139,7 +139,7 @@ const App: React.FC = () => {
                   }
                 />
                 <Route
-                  path="seasonal_report"
+                  path="seasonal_report/*"
                   element={
                     <ProtectedRoute roles={['admin']}>
                       <SeasonReportsViewApp/>
