@@ -132,7 +132,7 @@ FROM nginx:alpine
 COPY --from=builder_host /app/dist /usr/share/nginx/html
 COPY --from=builder_reports /app/dist /usr/share/nginx/html/reports/
 COPY --from=builder_add_deputy /app/dist /usr/share/nginx/html/add_deputy/
-COPY --from=builder_season_reports_view /app/dist /usr/share/nginx/html/season_reports_view/
+COPY --from=builder_season_reports_view /app/dist /usr/share/nginx/html/seasonal_report/
 COPY --from=builder_dashboard /app/dist /usr/share/nginx/html/dashboard/
 COPY --from=builder_congrats /app/dist /usr/share/nginx/html/congrats/
 COPY --from=builder_registration_form /app/dist /usr/share/nginx/html/registration_form/
