@@ -58,10 +58,22 @@ class DeputyRecord(models.Model):
 
 
 class ReportRecord(models.Model):
-    # id = models.IntegerField(primary_key=True, auto_created=True, blank=True)
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name="records")
     deputy_record = models.ForeignKey(DeputyRecord, on_delete=models.CASCADE, related_name="report_records")
     link = models.URLField(null=True, verbose_name="Ссылка")
+
+    score = models.IntegerField(default=0, blank=True, verbose_name="Оценка")
+    score_explanation = models.TextField(null=True, blank=True, verbose_name="Объяснение оценки",
+                                         default=None)
+    STATUS_CHOICES = [
+        ('waiting', 'Ожидает проверки'),
+        ('in_process', 'Проверяется'),
+        ('processed', 'Проверено')
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="waiting",
+                              verbose_name="Статус проверки")
+    checked_at = models.DateTimeField(null=True, blank=True, verbose_name="Время проверки")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Время создания")
 
     class Meta:
         verbose_name = "Отчёт депутата"

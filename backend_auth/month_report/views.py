@@ -1,7 +1,8 @@
 from rest_framework import viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.decorators import action
 
+from ldpr_form.permissions import IsAdmin, IsAuthenticated
 from .models import ReportPeriod, Report, RegionReport, DeputyRecord, \
     ReportRecord
 from .serializers import (
@@ -16,7 +17,7 @@ from .serializers import (
     ReportDetailSerializer,
     RegionReportDetailSerializer,
     DeputyRecordDetailSerializer,
-    ReportRecordDetailSerializer,
+    ReportRecordDetailSerializer, AdminReportRecordSerializer,
 )
 
 from .services import init_report_period, init_report, init_deputy_record
@@ -106,8 +107,9 @@ class ReportRecordViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
-            # Ваш ReportRecordDetailSerializer не имеет вложенных объектов
             return ReportRecordDetailSerializer
+        if self.action == 'admin_check':
+            return AdminReportRecordSerializer
         return ReportRecordListSerializer
 
     def get_queryset(self):
@@ -118,3 +120,11 @@ class ReportRecordViewSet(viewsets.ModelViewSet):
                 'report'
             )
         return ReportRecord.objects.all()
+
+    @action(detail=True, methods=['patch'], permission_classes=[IsAdmin])
+    def admin_check(self, request, pk=None):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)

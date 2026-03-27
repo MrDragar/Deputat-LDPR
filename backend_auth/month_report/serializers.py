@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 from .models import ReportPeriod, Report, RegionReport, DeputyRecord, \
     ReportRecord
@@ -8,6 +9,13 @@ class ReportRecordListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReportRecord
         fields = '__all__'
+        read_only_fields = [
+            'score',
+            'score_explanation',
+            'status',
+            'checked_at',
+            'created_at'
+        ]
 
 
 class DeputyRecordListSerializer(serializers.ModelSerializer):
@@ -45,6 +53,13 @@ class ReportRecordDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReportRecord
         fields = '__all__'
+        read_only_fields = [
+            'score',
+            'score_explanation',
+            'status',
+            'checked_at',
+            'created_at'
+        ]
 
 
 class DeputyRecordDetailSerializer(serializers.ModelSerializer):
@@ -81,3 +96,26 @@ class ReportPeriodDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReportPeriod
         fields = '__all__'
+
+
+class AdminReportRecordSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReportRecord
+        fields = '__all__'
+        read_only_fields = [
+            'created_at',
+            'report',
+            'deputy_record',
+            'link',
+            'checked_at',
+        ]
+
+    def update(self, instance, validated_data):
+        admin_fields = ['score', 'score_explanation', 'status']
+        admin_fields_changed = any(
+            field in validated_data and getattr(instance, field) != validated_data[field]
+            for field in admin_fields
+        )
+        if admin_fields_changed:
+            validated_data['checked_at'] = timezone.now()
+        return super().update(instance, validated_data)
