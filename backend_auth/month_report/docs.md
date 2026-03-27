@@ -260,10 +260,11 @@ GET /api/auth/mouth_reports/deputy-records/{id}/
   "reason": null,
   "reportRecords": [
     {
-      "id": 1,
-      "report": 1,
-      "deputyRecord": 1,
-      "link": "https://example.com/report/1"
+      "score": null,
+      "scoreExplanation": null,
+      "status": "waiting",
+      "checkedAt": null,
+      "createdAt": "2024-01-10T08:00:00Z"
     }
   ]
 }
@@ -307,7 +308,12 @@ GET /api/auth/mouth_reports/report-records/
     "id": 1,
     "report": 1,
     "deputyRecord": 1,
-    "link": "https://example.com/report/1"
+    "link": "https://example.com/report/1",
+    "score": null,
+    "scoreExplanation": null,
+    "status": "waiting",
+    "checkedAt": null,
+    "createdAt": "2024-01-10T08:00:00Z"
   }
 ]
 ```
@@ -323,7 +329,12 @@ GET /api/auth/mouth_reports/report-records/{id}/
   "id": 1,
   "report": 1,
   "deputyRecord": 1,
-  "link": "https://example.com/report/1"
+  "link": "https://example.com/report/1",
+  "score": null,
+  "scoreExplanation": null,
+  "status": "waiting",
+  "checkedAt": null,
+  "createdAt": "2024-01-10T08:00:00Z"
 }
 ```
 
@@ -405,6 +416,43 @@ POST /api/auth/mouth_reports/report-records/
 }
 ```
 
+### 6.Административная проверка отчёта ⭐
+```http
+PATCH /api/auth/mouth_reports/report-records/{id}/admin_check/
+```
+Доступ: Только для администраторов
+Тело запроса (можно отправлять только эти поля):
+```json
+{
+  "score": 8,
+  "scoreExplanation": "Отличная работа, все ссылки корректны",
+  "status": "processed"
+}
+```
+#### Статусы проверки:
+    waiting - Ожидает проверки
+    in_process - Проверяется
+    processed - Проверено
+#### Особенности:
+    При изменении полей score, scoreExplanation или status автоматически обновляется checkedAt
+    Поле checkedAt устанавливается на текущее время сервера
+    Нельзя изменить status на processed без указания score
+
+Ответ:
+```
+json
+{
+  "id": 1,
+  "report": 1,
+  "deputyRecord": 1,
+  "link": "https://example.com/report/1",
+  "score": 8,
+  "scoreExplanation": "Отличная работа, все ссылки корректны",
+  "status": "processed",
+  "checkedAt": "2024-01-15T10:30:00Z",
+  "createdAt": "2024-01-10T08:00:00Z"
+}
+```
 ---
 
 ## Структура связанных данных при GET запросах:
