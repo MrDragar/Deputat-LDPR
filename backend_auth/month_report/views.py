@@ -1,8 +1,10 @@
+from django.http import FileResponse
 from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 
 from ldpr_form.permissions import IsAdmin, IsAuthenticated
+from .auto_form_table2 import generate_excel_bytes
 from .models import ReportPeriod, Report, RegionReport, DeputyRecord, \
     ReportRecord
 from .serializers import (
@@ -20,7 +22,8 @@ from .serializers import (
     ReportRecordDetailSerializer, AdminReportRecordSerializer,
 )
 
-from .services import init_report_period, init_report, init_deputy_record
+from .services import init_report_period, init_report, init_deputy_record, \
+    build_excel_data_for_region
 
 
 class ReportPeriodViewSet(viewsets.ModelViewSet):
@@ -79,6 +82,33 @@ class RegionReportViewSet(viewsets.ModelViewSet):
                 'deputies_records'
             ).select_related('report_period')
         return RegionReport.objects.all()
+
+    @action(detail=True, methods=['get'], permission_classes=[IsAdmin])
+    def download_excel(self, request, pk=None):
+        """
+        Эндпоинт для скачивания сгенерированного Excel-отчета по региону.
+        Доступен по GET /api/.../region_reports/{id}/download_excel/
+        """
+        region_report = self.get_object()
+
+        # 1. Собираем данные в формате JSON-словаря
+        data = build_excel_data_for_region(region_report)
+
+        # 2. Генерируем Excel в оперативной памяти
+        # Можно передать заголовки info_titles и vdpg_titles, если необходимо
+        excel_buffer = generate_excel_bytes(data)
+
+        # 3. Формируем безопасное имя файла
+        safe_region_name = region_report.region_name.replace(" ", "_")
+        filename = f"Report_{safe_region_name}.xlsx"
+
+        # 4. Возвращаем как файл
+        return FileResponse(
+            excel_buffer,
+            as_attachment=True,
+            filename=filename,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
 
 
 class DeputyRecordViewSet(viewsets.ModelViewSet):

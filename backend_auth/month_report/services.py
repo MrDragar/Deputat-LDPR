@@ -66,3 +66,87 @@ def init_report_period(report_period: ReportPeriod):
     for region in constants.REGIONS:
         region_report = RegionReport.objects.create(region_name=region, report_period=report_period)
         init_region_report(region_report)
+
+
+def build_excel_data_for_region(region_report: RegionReport) -> dict:
+    data = {
+        "region": region_report.region_name,
+        "Депутаты Законодательных собраний регионов": [],
+        "Депутаты административных центров регионов": [],
+        "Депутаты муниципальных образований": []
+    }
+
+    level_mapping = {
+        "ЗС": "Депутаты Законодательных собраний регионов",
+        "АЦС": "Депутаты административных центров регионов",
+        "МСУ": "Депутаты муниципальных образований"
+    }
+
+    # Оптимизированный запрос со всеми связанными данными
+    deputies = region_report.deputies_records.select_related(
+        'deputy'
+    ).prefetch_related(
+        'report_records__report'
+    )
+
+    EVENT_KEY = "Мероприятия по взаимодействию с избирателями, отраслевыми экспертными сообществами (в т.ч. по отработке ключевых информационных поводов)"
+
+    for deputy_rec in deputies:
+        # Извлекаем дополнительные данные пользователя (заглушки/безопасный доступ)
+        settlement = ""
+        contact = ""
+        if deputy_rec.deputy and hasattr(deputy_rec.deputy, 'deputy_form'):
+            settlement = getattr(deputy_rec.deputy.deputy_form, 'region', region_report.region_name)
+            contact = getattr(deputy_rec.deputy.deputy_form, 'contact', '')  # Подставьте свое поле
+
+        dep_dict = {
+            "fio": deputy_rec.fio,
+            "is_available": deputy_rec.is_available,
+            "settlement": settlement,
+            "contact": contact,
+            "reason": deputy_rec.reason or "",
+            "ВДПГ": {},
+            "Посты по информационным ударам": {},
+            EVENT_KEY: {
+                "опционально": []
+            }
+        }
+
+        vdpg_idx = 1
+        info_idx = 1
+        ev_idx = 1
+
+        for rec in deputy_rec.report_records.all():
+            rep = rec.report
+
+            # Формируем строку represent
+            represent = rec.link if rec.link else "Отсутствует ссылка"
+            if rec.link and rec.score_explanation:
+                represent = f"{rec.link} {rec.score_explanation}"
+
+            score = rec.score
+
+            if rep.theme == "vdpg":
+                dep_dict["ВДПГ"][f"vdpg_{vdpg_idx}"] = {"score": score, "represent": represent}
+                vdpg_idx += 1
+            elif rep.theme == "infoudar":
+                dep_dict["Посты по информационным ударам"][f"post_{info_idx}"] = {"score": score,
+                                                                                  "represent": represent}
+                info_idx += 1
+            elif rep.theme in ("event", "reg_event", "opt_event"):
+                events_dict = dep_dict[EVENT_KEY]
+                if rep.theme == "event":
+                    events_dict[str(ev_idx)] = {"score": score, "represent": represent}
+                    ev_idx += 1
+                elif rep.theme == "reg_event":
+                    events_dict["4 в рег. парламенте"] = {"score": score, "represent": represent}
+                elif rep.theme == "opt_event":
+                    events_dict["опционально"].append({"score": score, "represent": represent})
+
+        # Распределяем по уровням
+        group_name = level_mapping.get(deputy_rec.level)
+        if group_name:
+            data[group_name].append(dep_dict)
+
+    return data
+
