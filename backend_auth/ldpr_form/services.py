@@ -80,9 +80,9 @@ def process_form(user_id: int, status: bool, reason: str):
     logger.info(result)
     if result["status"] != "success":
         raise NotifyError(result["message"])
-    if status:
-        result = celery_app.send_task("src.tasks.accept_deputat",
-                                      args=(user_id, )).get()
+    # if status:
+    #     result = celery_app.send_task("src.tasks.accept_deputat",
+    #                                   args=(user_id, )).get()
         # if result["status"] != "success":
         #     raise NotifyError(result["message"])
     return password
