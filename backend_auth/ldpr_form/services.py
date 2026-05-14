@@ -24,6 +24,7 @@ class InvitingError(Exception):
 def process_form(user_id: int, status: bool, reason: str):
     user: User = User.objects.get(user_id=user_id)
     password = None
+    login = None
     if user.is_active:
         raise UserIsActiveError()
     if status:
@@ -57,8 +58,10 @@ def process_form(user_id: int, status: bool, reason: str):
                 counter += 1
                 new_login = f"{base_login}_{counter}"
             user.login = new_login
+            login = new_login
         else:
             user.login = base_login
+            login = base_login
         user.is_active = True
         user.save()
 
@@ -74,7 +77,7 @@ def process_form(user_id: int, status: bool, reason: str):
                   f"{reason}"
         user.delete()
     if user_id < 100:
-        return password
+        return login, password
     # result = celery_app.send_task("src.tasks.send_message",
     #                               args=(user_id, message)).get()
     # logger.info(result)
@@ -85,4 +88,4 @@ def process_form(user_id: int, status: bool, reason: str):
     #                                   args=(user_id, )).get()
         # if result["status"] != "success":
         #     raise NotifyError(result["message"])
-    return password
+    return login, password
