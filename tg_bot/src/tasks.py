@@ -5,18 +5,20 @@ from datetime import datetime
 from typing import Dict, Any
 
 from aiogram import Bot, types
+from aiogram.client.session.aiohttp import AiohttpSession
 from asgiref.sync import async_to_sync
 
 from src.celery_app import app
-from src.config import BOT_TOKEN, CHAT_ID, INFO_LOG_CHAT_ID, ERROR_LOG_CHAT_ID
+from src.config import BOT_TOKEN, CHAT_ID, INFO_LOG_CHAT_ID, ERROR_LOG_CHAT_ID, proxy
 from src.services.user import create_user
 from src.database import get_db
+
 
 logger = logging.getLogger(__name__)
 
 
 def get_bot():
-    return Bot(BOT_TOKEN)
+    return Bot(BOT_TOKEN, session=AiohttpSession(proxy=proxy))
 
 
 @app.task()

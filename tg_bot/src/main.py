@@ -2,9 +2,10 @@ import asyncio
 import logging
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
+from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.enums import ParseMode
 
-from src.config import BOT_TOKEN
+from src.config import BOT_TOKEN, proxy
 from src.handlers import router
 from src.database import create_tables
 
@@ -26,7 +27,8 @@ async def main():
     # Инициализация бота
     bot = Bot(
         token=BOT_TOKEN,
-        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+        session=AiohttpSession(proxy=proxy)
     )
 
     # Инициализация диспетчера
