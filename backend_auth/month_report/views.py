@@ -87,7 +87,7 @@ class RegionReportViewSet(viewsets.ModelViewSet):
     def download_excel(self, request, pk=None):
         """
         Эндпоинт для скачивания сгенерированного Excel-отчета по региону.
-        Доступен по GET /api/.../region_reports/{id}/download_excel/
+        Доступен по GET api/auth/mouth_reports/region_reports/{id}/download_excel/
         """
         region_report = self.get_object()
 
