@@ -159,11 +159,30 @@ export interface DeputyRecord {
   reportRecords?: ReportRecord[]; // Вложенные ссылки на отчеты (только в GET {id})
 }
 
+export interface ReportDetail {
+  id: number;
+  name: string;
+  theme: string;
+  themeDisplay: string;
+}
+
+export interface DeputyRecordDetail {
+  id: number;
+  fio: string;
+  level: string;
+  levelDisplay: string;
+}
+
 export interface ReportRecord {
   id: number;
-  report: number;
-  deputyRecord: number;
+  report: number | ReportDetail;
+  deputyRecord: number | DeputyRecordDetail;
   link: string | null;
+  score: number | null;
+  scoreExplanation: string | null;
+  status: 'waiting' | 'in_process' | 'processed';
+  checked_at: string | null;
+  createdAt: string;
 }
 
 export interface AdminViewData {

@@ -4,6 +4,7 @@ import TextInput from '../../components/ui/TextInput';
 import { APIError } from '../../services/api';
 import { User, Lock, Eye, EyeOff } from 'lucide-react';
 import Logo from '../../components/ui/Logo';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const LoginPage: React.FC = () => {
   const [username, setUsername] = useState('');
@@ -12,6 +13,10 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const from = location.state?.from ? `${location.state.from.pathname}${location.state.from.search}${location.state.from.hash}` : '/';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,6 +24,7 @@ const LoginPage: React.FC = () => {
     setLoading(true);
     try {
       await login(username, password);
+      navigate(from, { replace: true });
     } catch (err) {
       if (err instanceof APIError) {
         setError(err.message || 'Не удалось войти. Проверьте логин и пароль.');

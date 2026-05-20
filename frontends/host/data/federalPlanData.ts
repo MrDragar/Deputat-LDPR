@@ -1,6 +1,4 @@
-// FIX: `subDays` was not found in the main export, so it's imported directly from its subpath.
-import { addDays, format } from 'date-fns';
-import subDays from 'date-fns/subDays';
+import { addDays, format, subDays } from 'date-fns';
 
 export type PartyImage =
   | 'Перемены после СВО'

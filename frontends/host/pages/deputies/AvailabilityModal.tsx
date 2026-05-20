@@ -67,15 +67,15 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, 
           />
         </div>
 
-        <div className={`transition-all duration-300 overflow-hidden ${!isAvailable ? 'opacity-100 max-h-[150px]' : 'opacity-0 max-h-0'}`}>
-          <div className="space-y-2 pt-2">
+        {!isAvailable && (
+          <div className="space-y-2 pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
             <label htmlFor="reason" className="block text-sm font-medium text-gray-700">
               Причина невзаимодействия <span className="text-red-500">*</span>
             </label>
             <textarea
               id="reason"
               rows={3}
-              className={`w-full rounded-md shadow-sm sm:text-sm p-3 border ${showError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
+              className={`w-full rounded-md shadow-sm text-base sm:text-sm p-3 border resize-none ${showError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'}`}
               placeholder="Укажите причину..."
               value={reason}
               onChange={(e) => setReason(e.target.value)}
@@ -85,7 +85,7 @@ const AvailabilityModal: React.FC<AvailabilityModalProps> = ({ isOpen, onClose, 
               <p className="text-xs text-red-500">Обязательное поле</p>
             )}
           </div>
-        </div>
+        )}
       </div>
     </ConfirmationModal>
   );

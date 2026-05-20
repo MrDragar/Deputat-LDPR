@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, Link, useSearchParams } from 'react-router-dom';
 import { useFederalPlan } from '../../context/FederalPlanContext';
-// FIX: `parse` is imported from its subpath in date-fns v2+.
-import { format } from 'date-fns';
-import parse from 'date-fns/parse';
+import { format, parse } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
 import type { DailyPlan, PlanEvent, PartyImage } from '../../data/federalPlanData';
 import { partyImageOptions, partyImageConfig } from '../../data/federalPlanData';

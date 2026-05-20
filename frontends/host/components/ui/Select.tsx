@@ -88,7 +88,7 @@ const Select: React.FC<SelectProps> = ({ label, name, id, options, value, onChan
                 )}
                 <div className="relative">
                   {icon && (
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                           {icon}
                       </div>
                   )}
@@ -97,7 +97,7 @@ const Select: React.FC<SelectProps> = ({ label, name, id, options, value, onChan
                       type="button"
                       onClick={() => setIsOpen(true)}
                       className={`w-full py-3 pr-4 text-left bg-white border rounded-md shadow-sm flex justify-between items-center text-base
-                      focus:outline-none focus:ring-2 ${error ? 'border-red-500 ring-red-500' : 'border-gray-300 ring-blue-500 focus:border-blue-500'} ${icon ? 'pl-12' : 'pl-4'} ${className || ''}`}
+                      focus:outline-none focus:ring-2 ${error ? 'border-red-500 ring-red-500' : 'border-gray-300 ring-blue-500 focus:border-blue-500'} ${icon ? 'pl-10' : 'pl-4'} ${className || ''}`}
                   >
                       <span className={value ? 'text-gray-900' : 'text-gray-500'}>
                           {selectedLabel}
@@ -132,7 +132,7 @@ const Select: React.FC<SelectProps> = ({ label, name, id, options, value, onChan
             )}
             <div className="relative">
                  {icon && (
-                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         {icon}
                     </div>
                 )}
@@ -141,7 +141,7 @@ const Select: React.FC<SelectProps> = ({ label, name, id, options, value, onChan
                     type="button"
                     onClick={handleToggle}
                     className={`w-full py-3 pr-4 text-left bg-white border rounded-md shadow-sm flex justify-between items-center text-base
-                    focus:outline-none focus:ring-2 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} ${icon ? 'pl-12' : 'pl-4'} ${className || ''}`}
+                    focus:outline-none focus:ring-2 ${error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'} ${icon ? 'pl-10' : 'pl-4'} ${className || ''}`}
                 >
                     <span className={value ? 'text-gray-900' : 'text-gray-500'}>
                         {selectedLabel}

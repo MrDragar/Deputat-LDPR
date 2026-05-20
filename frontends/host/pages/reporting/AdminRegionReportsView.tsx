@@ -2,11 +2,13 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { api } from '../../services/api';
 import type { ReportPeriod, RegionReport, Report, DeputyRecord, ReportTheme } from '../../types';
-import { ArrowLeft, MapPin, ChevronRight, Inbox, Loader2, FileArchive } from 'lucide-react';
+import { ArrowLeft, MapPin, ChevronRight, Inbox, Loader2, FileArchive, Search, ArrowUpDown } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
 import { useAlert } from '../../context/AlertContext';
 import JSZip from 'jszip';
+import Select from '../../components/ui/Select';
+import CheckboxDropdown from '../../components/ui/CheckboxDropdown';
 
 const AdminRegionReportsView: React.FC = () => {
     const { periodId } = useParams<{ periodId: string }>();
@@ -15,6 +17,88 @@ const AdminRegionReportsView: React.FC = () => {
     const [period, setPeriod] = useState<ReportPeriod | null>(null);
     const [loading, setLoading] = useState(true);
     const [isExporting, setIsExporting] = useState(false);
+
+    const STORAGE_KEY = `adminRegionFilters_${periodId}`;
+
+    const [searchQuery, setSearchQuery] = useState(() => {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try { return JSON.parse(saved).searchQuery || ''; } catch (e) {}
+        }
+        return '';
+    });
+    const [selectedRegions, setSelectedRegions] = useState<string[]>(() => {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try { return JSON.parse(saved).selectedRegions || []; } catch (e) {}
+        }
+        return [];
+    });
+    const [isRegionsInitialized, setIsRegionsInitialized] = useState(() => {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try { return JSON.parse(saved).isRegionsInitialized || false; } catch (e) {}
+        }
+        return false;
+    });
+    const [sortOption, setSortOption] = useState(() => {
+        const saved = sessionStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try { return JSON.parse(saved).sortOption || 'az'; } catch (e) {}
+        }
+        return 'az';
+    });
+
+    useEffect(() => {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
+            searchQuery,
+            selectedRegions,
+            isRegionsInitialized,
+            sortOption
+        }));
+    }, [searchQuery, selectedRegions, isRegionsInitialized, sortOption, STORAGE_KEY]);
+
+    const availableRegions = useMemo(() => {
+        if (!period || !period.regionReports) return [];
+        return Array.from(new Set(period.regionReports.map(r => r.regionName))).sort();
+    }, [period]);
+
+    useEffect(() => {
+        if (!isRegionsInitialized && availableRegions.length > 0) {
+            setSelectedRegions(availableRegions);
+            setIsRegionsInitialized(true);
+        }
+    }, [availableRegions, isRegionsInitialized]);
+
+    const filteredRegions = useMemo(() => {
+        if (!period || !period.regionReports) return [];
+        
+        if (isRegionsInitialized && selectedRegions.length === 0) {
+            return [];
+        }
+
+        let filtered = [...period.regionReports];
+
+        if (searchQuery) {
+            filtered = filtered.filter(r => r.regionName.toLowerCase().includes(searchQuery.toLowerCase()));
+        }
+
+        if (selectedRegions.length > 0) {
+            filtered = filtered.filter(r => selectedRegions.includes(r.regionName));
+        }
+
+        switch (sortOption) {
+            case 'az':
+            default:
+                filtered.sort((a, b) => a.regionName.localeCompare(b.regionName));
+                break;
+            case 'za':
+                filtered.sort((a, b) => b.regionName.localeCompare(a.regionName));
+                break;
+        }
+
+        return filtered;
+    }, [period, searchQuery, selectedRegions, sortOption]);
 
     const fetchData = useCallback(async () => {
         if (!periodId) return;
@@ -152,26 +236,78 @@ const AdminRegionReportsView: React.FC = () => {
     const periodName = period.name || format(parseISO(period.startDate), 'LLLL yyyy', { locale: ru });
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500">
-            <header>
-                <Link to="/reports" className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors mb-4">
+        <div className="space-y-2 animate-in fade-in duration-500 pb-8 sm:pb-0 pt-4 sm:pt-0">
+            <div className="px-4 sm:px-6">
+                <Link to="/reports" className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors">
                     <ArrowLeft size={16} /> Назад к периодам
                 </Link>
+            </div>
+
+            <div className="bg-white p-4 sm:p-6 sm:rounded-xl sm:border border-gray-200 sm:shadow-sm space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Регионы периода</h1>
-                        <p className="mt-1 text-gray-500 capitalize">{periodName}</p>
+                        <div className="flex items-center gap-4">
+                            <h1 className="text-2xl font-bold text-gray-900">Регионы</h1>
+                            <span className="bg-blue-600 text-white font-semibold px-3 py-1 text-sm rounded-full">
+                                {filteredRegions.length}
+                            </span>
+                        </div>
+                        <div className="mt-2 text-sm text-gray-500 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                            <p>
+                                Период: <span className="font-bold text-gray-700 capitalize">{periodName}</span>
+                                <span className="ml-1 text-gray-400">({format(parseISO(period.startDate), 'd.MM.yyyy')} - {format(parseISO(period.endDate), 'd.MM.yyyy')})</span>
+                            </p>
+                        </div>
                     </div>
                     <button 
                         onClick={handleDownloadAll}
                         disabled={isExporting || !period.regionReports || period.regionReports.length === 0}
-                        className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold shadow-md hover:bg-blue-700 transition-all disabled:bg-blue-300 disabled:shadow-none"
+                        className="inline-flex items-center justify-center bg-blue-600 text-white font-semibold rounded-lg px-4 py-2 hover:bg-blue-700 transition-colors shadow-sm disabled:bg-blue-300 disabled:shadow-none"
                     >
                         {isExporting ? <Loader2 size={20} className="animate-spin" /> : <FileArchive size={20} />}
-                        <span>{isExporting ? 'Сбор данных...' : 'Скачать данные'}</span>
+                        <span className="ml-2">{isExporting ? 'Сбор данных...' : 'Экспортировать'}</span>
                     </button>
                 </div>
-            </header>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Search */}
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                        <input 
+                            type="text" 
+                            placeholder="Поиск по региону..." 
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="w-full h-[50px] pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-base"
+                        />
+                    </div>
+                    
+                    {/* Region Dropdown */}
+                    <div>
+                        <CheckboxDropdown
+                            title=""
+                            options={availableRegions}
+                            selectedOptions={selectedRegions}
+                            onChange={setSelectedRegions}
+                            placeholder="Регион"
+                        />
+                    </div>
+
+                    {/* Sort Dropdown */}
+                    <div>
+                        <Select
+                            value={sortOption}
+                            onChange={(_, val) => setSortOption(val)}
+                            options={[
+                                { value: 'az', label: 'По названию (А-Я)' },
+                                { value: 'za', label: 'По названию (Я-А)' }
+                            ]}
+                            icon={<ArrowUpDown className="h-5 w-5 text-gray-400" />}
+                            className="h-[50px]"
+                        />
+                    </div>
+                </div>
+            </div>
 
             {!period.regionReports || period.regionReports.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center">
@@ -179,27 +315,34 @@ const AdminRegionReportsView: React.FC = () => {
                     <h3 className="text-lg font-bold text-gray-800">Регионы не найдены</h3>
                     <p className="text-gray-500">В этом периоде еще не создано ни одного регионального отчета.</p>
                 </div>
+            ) : filteredRegions.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center">
+                    <Search size={48} className="mx-auto text-gray-300 mb-4" />
+                    <h3 className="text-lg font-bold text-gray-800">Ничего не найдено</h3>
+                    <p className="text-gray-500">По вашему запросу не найдено ни одного региона.</p>
+                </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {period.regionReports.map((reg) => (
-                        <div key={reg.id} className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden group">
-                            <div className="p-6">
-                                <div className="flex items-start justify-between mb-4">
-                                    <div className="p-3 bg-blue-50 text-blue-600 rounded-xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                        <MapPin size={24} />
-                                    </div>
-                                    <span className="text-[10px] font-extrabold uppercase bg-slate-100 text-slate-500 px-2 py-1 rounded-md">ID: {reg.id}</span>
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-6 line-clamp-2 min-h-[3.5rem]">{reg.regionName}</h3>
+                <div className="bg-white sm:rounded-xl sm:border border-gray-200 sm:shadow-sm overflow-hidden">
+                    <ul className="divide-y divide-gray-100">
+                        {filteredRegions.map((reg, index) => (
+                            <li key={reg.id}>
                                 <button 
                                     onClick={() => navigate(`/reports/monitoring/${reg.id}`)}
-                                    className="w-full flex items-center justify-center gap-2 py-3 bg-slate-50 text-slate-700 rounded-lg font-bold hover:bg-blue-50 hover:text-blue-700 transition-all border border-slate-200 hover:border-blue-200"
+                                    className="w-full flex items-center justify-between p-4 sm:p-5 text-left hover:bg-slate-50/50 transition-colors group"
                                 >
-                                    Детализация <ChevronRight size={16} />
+                                    <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+                                        <div className="flex-shrink-0 w-6 h-6 sm:w-8 sm:h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-xs sm:text-sm shadow-sm">
+                                            {index + 1}
+                                        </div>
+                                        <span className="text-sm sm:text-base font-medium text-gray-900 truncate">
+                                            {reg.regionName}
+                                        </span>
+                                    </div>
+                                    <ChevronRight className="h-5 w-5 text-gray-300 ml-2 flex-shrink-0 group-hover:text-blue-600 transition-colors" />
                                 </button>
-                            </div>
-                        </div>
-                    ))}
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             )}
         </div>

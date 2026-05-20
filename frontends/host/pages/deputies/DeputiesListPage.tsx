@@ -439,6 +439,15 @@ const DeputiesListPage: React.FC = () => {
         }
     };
 
+    const handleResetFilters = () => {
+        setSearchTerm('');
+        setSelectedRegions(ALL_REGIONS);
+        setSelectedLevels(REPRESENTATION_LEVELS.map(l => l.label));
+        setSelectedInteraction(['Взаимодействующий', 'Невзаимодействующий']);
+        setSelectedVerification(['Верифицирован', 'Не верифицирован']);
+        setSortOption('date_desc');
+    };
+
     if (loading) return <DeputiesListSkeleton />;
     if (error) return <div className="p-6 text-center text-red-600">{error}</div>;
 
@@ -446,22 +455,31 @@ const DeputiesListPage: React.FC = () => {
         <div className="space-y-6">
             {/* Unified Header & Filters Section */}
             <div className="bg-white p-4 sm:p-6 sm:rounded-xl sm:border border-gray-200 sm:shadow-sm">
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                     <div className="flex items-center gap-4">
                         <h1 className="text-2xl font-bold text-gray-900">Наши депутаты</h1>
                         <span className="bg-blue-600 text-white font-semibold px-3 py-1 text-sm rounded-full">
                             {filteredDeputies.length}
                         </span>
                     </div>
-                    {currentUser?.role === 'admin' && (
-                        <Link
-                            to="/add_deputy"
-                            className="hidden sm:inline-flex items-center justify-center bg-blue-600 text-white font-semibold rounded-full w-10 h-10 sm:w-auto sm:h-auto sm:px-4 sm:py-2 sm:rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleResetFilters}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm shrink-0"
                         >
-                            <Plus size={20} />
-                            <span className="hidden sm:inline sm:ml-2">Добавить депутата</span>
-                        </Link>
-                    )}
+                            <RefreshCw size={18} />
+                            <span className="hidden sm:inline">Сбросить фильтры</span>
+                        </button>
+                        {currentUser?.role === 'admin' && (
+                            <Link
+                                to="/add_deputy"
+                                className="hidden sm:inline-flex items-center justify-center bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors shadow-sm shrink-0"
+                            >
+                                <Plus size={20} />
+                                <span className="hidden sm:inline sm:ml-2">Добавить депутата</span>
+                            </Link>
+                        )}
+                    </div>
                 </div>
 
                 <div className="space-y-4">
@@ -514,7 +532,7 @@ const DeputiesListPage: React.FC = () => {
                                                     : [...selectedLevels, level.label];
                                                 setSelectedLevels(newSelection);
                                             }}
-                                            className={`px-4 py-2 text-sm font-bold rounded-full transition-all ${
+                                            className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${
                                                 isSelected ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                             }`}
                                         >

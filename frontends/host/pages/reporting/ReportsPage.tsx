@@ -5,7 +5,6 @@ import AdminReportsView from './AdminReportsView';
 import AdminRegionReportsView from './AdminRegionReportsView';
 import AdminRegionMonitoringView from './AdminRegionMonitoringView';
 import CoordinatorReportsView from './CoordinatorReportsView';
-import DeputyReportsView from './DeputyReportsView';
 
 const ReportsPage: React.FC = () => {
     const { user } = useAuth();
@@ -17,17 +16,17 @@ const ReportsPage: React.FC = () => {
             <Route index element={
                 user.role === 'admin' || user.role === 'employee' 
                     ? <AdminReportsView /> 
-                    : user.role === 'coordinator' 
-                        ? <CoordinatorReportsView /> 
-                        : <DeputyReportsView />
+                    : <CoordinatorReportsView />
             } />
+            
+            {/* Специфические маршруты админа, координатора и депутата */}
+            {(user.role === 'admin' || user.role === 'employee' || user.role === 'coordinator' || user.role === 'deputy') && (
+                <Route path="monitoring/:regionReportId" element={<AdminRegionMonitoringView />} />
+            )}
             
             {/* Специфические маршруты админа */}
             {(user.role === 'admin' || user.role === 'employee') && (
-                <>
-                    <Route path="regions/:periodId" element={<AdminRegionReportsView />} />
-                    <Route path="monitoring/:regionReportId" element={<AdminRegionMonitoringView />} />
-                </>
+                <Route path="regions/:periodId" element={<AdminRegionReportsView />} />
             )}
 
             <Route path="*" element={<Navigate to="/reports" />} />

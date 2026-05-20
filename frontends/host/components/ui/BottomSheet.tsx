@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, AlertTriangle, CheckCircle } from 'lucide-react';
+import { X, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
 
 interface BottomSheetProps {
     isOpen: boolean;
@@ -14,6 +14,7 @@ interface BottomSheetProps {
     isConfirmDisabled?: boolean;
     hideIcon?: boolean;
     hideActions?: boolean;
+    isSaving?: boolean;
 }
 
 const BottomSheet: React.FC<BottomSheetProps> = ({ 
@@ -27,10 +28,17 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
     icon,
     isConfirmDisabled = false,
     hideIcon = false,
-    hideActions = false
+    hideActions = false,
+    isSaving = false
 }) => {
     const sheetRef = useRef<HTMLDivElement>(null);
     const portalRoot = typeof document !== 'undefined' ? document.getElementById('root') : null;
+
+    useEffect(() => {
+        if (isOpen) {
+            sheetRef.current?.focus();
+        }
+    }, [isOpen]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -42,7 +50,6 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
         if (isOpen) {
             document.body.style.overflow = 'hidden';
             document.addEventListener('keydown', handleKeyDown);
-            sheetRef.current?.focus();
         } else {
             document.body.style.overflow = '';
         }
@@ -89,31 +96,41 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
             <div
                 ref={sheetRef}
                 tabIndex={-1}
-                className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl transition-transform duration-300 ease-in-out transform outline-none ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
+                className={`fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl transition-transform duration-300 ease-in-out transform outline-none flex flex-col max-h-[90vh] ${isOpen ? 'translate-y-0' : 'translate-y-full'}`}
                 style={{ willChange: 'transform' }}
             >
-                <div className="relative p-4 sm:p-6">
-                     <button
-                        onClick={onClose}
-                        className="absolute top-4 right-4 p-1 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        aria-label="Закрыть"
-                    >
-                        <X className="h-6 w-6" />
-                    </button>
-                    
-                    <div className="text-center">
-                        {!hideIcon && (
-                            <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${iconBg}`}>
-                                <IconToRender className="h-6 w-6 text-white" aria-hidden="true" />
-                            </div>
-                        )}
-                        <div className={hideIcon ? "" : "mt-3"}>
+                <div className="relative p-4 sm:p-6 overflow-y-auto">
+                    {hideIcon ? (
+                        <div className="flex items-center justify-between mb-4">
                             <h2 id="sheet-title" className="text-xl font-bold text-gray-900">{title}</h2>
+                            <button onClick={onClose} className="p-1 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-600 focus:outline-none">
+                                <X className="h-6 w-6" />
+                            </button>
                         </div>
-                    </div>
-
-                    <div className="mt-4 text-base text-gray-600 text-center">
-                        {children}
+                    ) : (
+                        <button
+                            onClick={onClose}
+                            className="absolute top-4 right-4 p-1 text-gray-400 rounded-full hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            aria-label="Закрыть"
+                        >
+                            <X className="h-6 w-6" />
+                        </button>
+                    )}
+                    
+                    <div className={hideIcon ? "text-left" : "text-center"}>
+                        {!hideIcon && (
+                            <>
+                                <div className={`mx-auto flex h-12 w-12 items-center justify-center rounded-full ${iconBg}`}>
+                                    <IconToRender className="h-6 w-6 text-white" aria-hidden="true" />
+                                </div>
+                                <div className="mt-3">
+                                    <h2 id="sheet-title" className="text-xl font-bold text-gray-900">{title}</h2>
+                                </div>
+                            </>
+                        )}
+                        <div className={`mt-4 text-base text-gray-600 ${hideIcon ? "text-left" : "text-center"}`}>
+                            {children}
+                        </div>
                     </div>
 
                     {!hideActions && (
@@ -128,10 +145,10 @@ const BottomSheet: React.FC<BottomSheetProps> = ({
                              <button
                                 type="button"
                                 onClick={onConfirm}
-                                disabled={isConfirmDisabled}
-                                className={`w-full px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${isConfirmDisabled ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : buttonClasses}`}
+                                disabled={isConfirmDisabled || isSaving}
+                                className={`w-full px-6 py-3 text-base font-semibold rounded-lg transition-all shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${buttonClasses}`}
                             >
-                                {confirmButtonText}
+                                {isSaving ? <Loader2 size={18} className="animate-spin" /> : confirmButtonText}
                             </button>
                         </div>
                     )}

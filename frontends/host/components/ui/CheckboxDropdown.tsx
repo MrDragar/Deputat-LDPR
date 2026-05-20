@@ -10,10 +10,11 @@ interface CheckboxDropdownProps {
     onChange: (newSelection: string[]) => void;
     searchable?: boolean;
     className?: string;
+    labelClassName?: string;
     counts?: Record<string, number>;
 }
 
-const CheckboxDropdown: React.FC<CheckboxDropdownProps> = ({ title, options, selectedOptions, onChange, searchable = true, className, counts }) => {
+const CheckboxDropdown: React.FC<CheckboxDropdownProps> = ({ title, options, selectedOptions, onChange, searchable = true, className, labelClassName, counts }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -94,7 +95,7 @@ const CheckboxDropdown: React.FC<CheckboxDropdownProps> = ({ title, options, sel
 
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
-            {title && <label className="block text-base font-semibold text-gray-800 mb-2">{title}</label>}
+            {title && <label className={`block text-base font-semibold text-gray-800 mb-2 ${labelClassName || ''}`}>{title}</label>}
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}

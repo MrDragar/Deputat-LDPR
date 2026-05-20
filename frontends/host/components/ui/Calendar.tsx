@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-// FIX: Split date-fns imports. Functions that were reported as missing are imported directly from their subpaths.
 import { 
     format, 
     addMonths, 
@@ -10,12 +9,13 @@ import {
     isSameMonth, 
     isSameDay,
     isToday,
-    isWithinInterval
+    isWithinInterval,
+    startOfDay,
+    addDays,
+    subMonths,
+    startOfMonth,
+    startOfWeek
 } from 'date-fns';
-import subMonths from 'date-fns/subMonths';
-import startOfMonth from 'date-fns/startOfMonth';
-import startOfWeek from 'date-fns/startOfWeek';
-// FIX: The `ru` locale is imported from its specific path, which is required in newer versions of date-fns.
 import { ru } from 'date-fns/locale/ru';
 
 export interface DateRange {
@@ -30,6 +30,8 @@ interface CalendarProps {
     displayMonth?: Date;
     showNavigation?: boolean;
     disabledDates?: Date[];
+    minDate?: Date;
+    maxDate?: Date;
 }
 
 export const Calendar: React.FC<CalendarProps> = ({ 
@@ -38,7 +40,9 @@ export const Calendar: React.FC<CalendarProps> = ({
     className, 
     displayMonth, 
     showNavigation = true,
-    disabledDates = []
+    disabledDates = [],
+    minDate,
+    maxDate
 }) => {
     const [internalMonth, setInternalMonth] = useState(selected?.from || new Date());
     const currentMonth = displayMonth || internalMonth;
@@ -47,8 +51,14 @@ export const Calendar: React.FC<CalendarProps> = ({
     const monthEnd = endOfMonth(currentMonth);
     // Ensure week starts on Monday for 'ru' locale
     const startDate = startOfWeek(monthStart, { locale: ru });
-    const endDate = endOfWeek(monthEnd, { locale: ru });
-    const days = eachDayOfInterval({ start: startDate, end: endDate });
+    let endDate = endOfWeek(monthEnd, { locale: ru });
+    let days = eachDayOfInterval({ start: startDate, end: endDate });
+
+    // Force 6 weeks (42 days) to prevent height jumping
+    while (days.length < 42) {
+        endDate = addDays(endDate, 7);
+        days = eachDayOfInterval({ start: startDate, end: endDate });
+    }
 
     const nextMonth = () => setInternalMonth(addMonths(currentMonth, 1));
     const prevMonth = () => setInternalMonth(subMonths(currentMonth, 1));
@@ -78,7 +88,11 @@ export const Calendar: React.FC<CalendarProps> = ({
             <div className="grid grid-cols-7">
                 {days.map(day => {
                     const isCurrentMonth = isSameMonth(day, currentMonth);
-                    const isDisabled = disabledDates.some(disabledDate => isSameDay(day, disabledDate));
+                    const dayStart = startOfDay(day);
+                    const minStart = minDate ? startOfDay(minDate) : undefined;
+                    const maxStart = maxDate ? startOfDay(maxDate) : undefined;
+                    const isOutsideRange = (minStart && dayStart < minStart) || (maxStart && dayStart > maxStart);
+                    const isDisabled = isOutsideRange || disabledDates.some(disabledDate => isSameDay(day, disabledDate));
                     const isRangeSelected = !!(selected?.from && selected.to);
                     const isStart = selected?.from && isSameDay(day, selected.from);
                     const isEnd = selected?.to && isSameDay(day, selected.to);
@@ -94,7 +108,7 @@ export const Calendar: React.FC<CalendarProps> = ({
                     const isEndOfWeekForRange = isSameDay(day, endOfWeek(day, { locale: ru }));
 
                     let backgroundClasses = 'absolute inset-y-0 h-10 bg-blue-100';
-                    let shouldRenderBackground = true;
+                    let shouldRenderBackground = isCurrentMonth;
 
                     if (isRangeStart && isRangeEnd) {
                         shouldRenderBackground = false;
@@ -121,14 +135,14 @@ export const Calendar: React.FC<CalendarProps> = ({
                         'rounded-full',
                         'text-sm transition-colors duration-150',
                         'focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500',
-                        isDisabled
-                            ? 'text-gray-400 line-through cursor-not-allowed'
-                            : isSelected || isSingleDaySelection
-                                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                : isCurrentMonth 
-                                    ? 'text-gray-900 hover:bg-gray-100' 
-                                    : 'text-gray-400',
-                        isToday(day) && !isSelected && !isInRange && !isDisabled ? 'font-semibold' : '',
+                        !isCurrentMonth
+                            ? 'text-gray-300 cursor-default'
+                            : isDisabled
+                                ? 'text-gray-400 line-through cursor-not-allowed'
+                                : isSelected || isSingleDaySelection
+                                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                                    : 'text-gray-900 hover:bg-gray-100',
+                        isToday(day) && !isSelected && !isInRange && !isDisabled && isCurrentMonth ? 'font-semibold' : '',
                     ].filter(Boolean).join(' ');
 
                     return (

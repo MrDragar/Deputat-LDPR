@@ -1,38 +1,29 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { api } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import type { ReportPeriod, Report, ReportRecord, DeputyRecord, ReportTheme, DeputyLevel } from '../../types';
 import { 
   ArrowLeft, MapPin, Users, Link as LinkIcon, 
-  AlertCircle, Calendar, Inbox, Loader2, Plus, Trash2, X, UserX, UserCheck, ExternalLink
+  AlertCircle, Calendar, Inbox, Loader2, Plus, Trash2, X, UserX, UserCheck, ExternalLink, CheckCircle, Clock, Edit3
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ru } from 'date-fns/locale/ru';
 import { useAlert } from '../../context/AlertContext';
 import TextInput from '../../components/ui/TextInput';
 import Switch from '../../components/ui/Switch';
+import ConfirmationModal from '../../components/ui/ConfirmationModal';
 import { createPortal } from 'react-dom';
-
-const THEME_ORDER: Record<ReportTheme, number> = {
-    'infoudar': 1,
-    'event': 2,
-    'reg_event': 3,
-    'opt_event': 4,
-    'vdpg': 5,
-    'letter': 6
-};
-
-const GET_GROUP_INFO = (theme: ReportTheme) => {
-    if (theme === 'infoudar') return { title: 'Инфоудары', color: 'bg-orange-50 text-orange-700 border-orange-200' };
-    if (['event', 'reg_event', 'opt_event'].includes(theme)) return { title: 'Мероприятия', color: 'bg-blue-50 text-blue-700 border-blue-200' };
-    if (theme === 'vdpg') return { title: 'ВДПГ', color: 'bg-red-50 text-red-700 border-red-200' };
-    return { title: 'Прочее', color: 'bg-gray-50 text-gray-700 border-gray-200' };
-};
+import RegionMonitoringDashboard from '../../components/reporting/RegionMonitoringDashboard';
 
 const AdminRegionMonitoringView: React.FC = () => {
     const { regionReportId } = useParams<{ regionReportId: string }>();
     const { showAlert } = useAlert();
+    const { user } = useAuth();
+    const navigate = useNavigate();
     
+    const isAdmin = user?.role === 'admin' || user?.role === 'employee';
+
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState<ReportPeriod | null>(null);
     const [regionName, setRegionName] = useState('');
@@ -51,6 +42,15 @@ const AdminRegionMonitoringView: React.FC = () => {
     const [targetDeputy, setTargetDeputy] = useState<DeputyRecord | null>(null);
     const [statusReason, setStatusReason] = useState('');
 
+    // State for Admin Check Modal
+    const [isAdminCheckModalOpen, setIsAdminCheckModalOpen] = useState(false);
+    const [targetReportRecord, setTargetReportRecord] = useState<ReportRecord | null>(null);
+    const [checkScore, setCheckScore] = useState<string>('');
+    const [checkExplanation, setCheckExplanation] = useState('');
+    const [checkStatus, setCheckStatus] = useState<'waiting' | 'in_process' | 'processed'>('waiting');
+
+    const [filteredCount, setFilteredCount] = useState(0);
+
     const fetchData = useCallback(async () => {
         if (!regionReportId) return;
         try {
@@ -63,7 +63,11 @@ const AdminRegionMonitoringView: React.FC = () => {
 
             const deputySummaries = regionDetail.deputiesRecords || [];
             const deputyDetailsPromises = deputySummaries.map(ds => api.getDeputyRecordById(ds.id));
-            const fullDeputies = await Promise.all(deputyDetailsPromises);
+            let fullDeputies = await Promise.all(deputyDetailsPromises);
+            
+            if (user?.role === 'deputy') {
+                fullDeputies = fullDeputies.filter(d => Number(d.deputy) === Number(user.user_id));
+            }
             
             setDeputyRecords(fullDeputies);
         } catch (error) {
@@ -71,13 +75,14 @@ const AdminRegionMonitoringView: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [regionReportId, showAlert]);
+    }, [regionReportId, showAlert, user]);
 
     useEffect(() => {
         fetchData();
     }, [fetchData]);
 
     const handleOpenAddModal = (level: DeputyLevel) => {
+        if (!isAdmin) return;
         setAddModalLevel(level);
         setNewDeputyFio('');
         setNewDeputyAvailable(true);
@@ -86,7 +91,7 @@ const AdminRegionMonitoringView: React.FC = () => {
     };
 
     const handleAddDeputy = async () => {
-        if (!regionReportId || !addModalLevel || !newDeputyFio.trim()) return;
+        if (!isAdmin || !regionReportId || !addModalLevel || !newDeputyFio.trim()) return;
         setIsSaving(true);
         try {
             const created = await api.createDeputyRecord({
@@ -116,6 +121,7 @@ const AdminRegionMonitoringView: React.FC = () => {
     const handleDeleteDeputy = async (e: React.MouseEvent, id: number) => {
         e.stopPropagation();
         e.preventDefault();
+        if (!isAdmin) return;
         if (!window.confirm('Вы уверены, что хотите удалить эту запись?')) return;
         
         try {
@@ -129,6 +135,7 @@ const AdminRegionMonitoringView: React.FC = () => {
     };
 
     const handleOpenStatusModal = (deputy: DeputyRecord) => {
+        if (!isAdmin) return;
         if (!deputy.isAvailable) {
             toggleStatus(deputy, true, null);
         } else {
@@ -139,6 +146,7 @@ const AdminRegionMonitoringView: React.FC = () => {
     };
 
     const toggleStatus = async (deputy: DeputyRecord, available: boolean, reason: string | null) => {
+        if (!isAdmin) return;
         setIsSaving(true);
         try {
             const updated = await api.updateDeputyRecord(deputy.id, {
@@ -162,212 +170,75 @@ const AdminRegionMonitoringView: React.FC = () => {
         }
     };
 
-    // Общая функция сортировки записей
-    const sortDeputies = (a: DeputyRecord, b: DeputyRecord) => {
-        // 1. Сначала взаимодействующие (isAvailable: true)
-        if (a.isAvailable !== b.isAvailable) {
-            return a.isAvailable ? -1 : 1;
-        }
-        // 2. Сначала те, у кого есть привязка к пользователю (deputy != null)
-        const aHasUser = a.deputy !== null;
-        const bHasUser = b.deputy !== null;
-        if (aHasUser !== bHasUser) {
-            return aHasUser ? -1 : 1;
-        }
-        // 3. По ФИО (А-Я)
-        return a.fio.localeCompare(b.fio);
+    const handleOpenAdminCheckModal = (record: ReportRecord) => {
+        if (!isAdmin) return;
+        setTargetReportRecord(record);
+        setCheckScore(record.score !== null ? record.score.toString() : '');
+        setCheckExplanation(record.scoreExplanation || '');
+        setCheckStatus(record.status || 'waiting');
+        setIsAdminCheckModalOpen(true);
     };
 
-    const renderLevelTable = (levelLabel: string, levelCode: DeputyLevel, deputies: DeputyRecord[], reports: Report[], isZS: boolean) => {
-        const sortedReports = [...reports]
-            .filter(r => isZS || r.theme !== 'reg_event')
-            .sort((a, b) => (THEME_ORDER[a.theme] || 99) - (THEME_ORDER[b.theme] || 99));
+    const handleAdminCheckSubmit = async () => {
+        if (!isAdmin || !targetReportRecord) return;
+        
+        const scoreNum = checkScore === '' ? null : parseFloat(checkScore);
+        const newStatus = scoreNum !== null ? 'processed' : 'waiting';
+        
+        if (scoreNum !== null && scoreNum !== 0 && scoreNum !== 1) {
+            showAlert('error', 'Ошибка валидации', 'Оценка должна быть 0 или 1.');
+            return;
+        }
 
-        const groups: { title: string, color: string, count: number }[] = [];
-        sortedReports.forEach((report) => {
-            const info = GET_GROUP_INFO(report.theme);
-            if (groups.length > 0 && groups[groups.length - 1].title === info.title) {
-                groups[groups.length - 1].count++;
-            } else {
-                groups.push({ ...info, count: 1 });
-            }
-        });
+        setIsSaving(true);
+        try {
+            const updatedRecord = await api.adminCheckReportRecord(targetReportRecord.id, {
+                score: scoreNum,
+                scoreExplanation: checkExplanation,
+                status: newStatus
+            });
+            
+            // Update the record in the state
+            setDeputyRecords(prev => prev.map(deputy => {
+                if (!deputy.reportRecords) return deputy;
+                return {
+                    ...deputy,
+                    reportRecords: deputy.reportRecords.map(rr => 
+                        rr.id === updatedRecord.id ? updatedRecord : rr
+                    )
+                };
+            }));
 
-        // Применяем сортировку к списку депутатов перед рендером
-        const sortedDeputies = [...deputies].sort(sortDeputies);
-
-        return (
-            <div className="space-y-3">
-                <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-2">
-                        <div className="h-4 w-1 bg-blue-600 rounded-full"></div>
-                        <h4 className="text-sm font-bold text-gray-700 uppercase tracking-wide">{levelLabel}</h4>
-                        <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-bold">{deputies.length}</span>
-                    </div>
-                    <button 
-                        onClick={() => handleOpenAddModal(levelCode)}
-                        className="flex items-center gap-1 text-[11px] font-bold uppercase text-blue-600 hover:text-blue-700 bg-blue-50 px-2 py-1 rounded-md transition-colors"
-                    >
-                        <Plus size={12} /> Добавить запись
-                    </button>
-                </div>
-                <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-auto max-h-[700px] relative">
-                    <table className="w-full min-w-[800px] text-sm text-left border-collapse table-auto">
-                        <thead className="sticky top-0 z-30">
-                            <tr className="bg-gray-50 border-b border-gray-200">
-                                <th rowSpan={2} scope="col" className="px-6 py-3 font-bold sticky left-0 bg-gray-50 z-40 w-[250px] border-r border-gray-200">
-                                    Депутат
-                                </th>
-                                {groups.map((group, idx) => (
-                                    <th 
-                                        key={`${group.title}-${idx}`} 
-                                        colSpan={group.count} 
-                                        className={`px-3 py-2 text-center text-[10px] font-extrabold uppercase tracking-widest border-b border-gray-200 ${group.color} ${idx > 0 ? 'border-l-2 border-gray-300' : 'border-l border-gray-200'}`}
-                                    >
-                                        {group.title}
-                                    </th>
-                                ))}
-                            </tr>
-                            <tr className="bg-gray-50 border-b border-gray-200">
-                                {sortedReports.map((report, idx) => {
-                                    const isSpecial = ['infoudar', 'vdpg'].includes(report.theme);
-                                    const groupInfo = GET_GROUP_INFO(report.theme);
-                                    const isFirstInGroup = idx === 0 || GET_GROUP_INFO(sortedReports[idx-1].theme).title !== groupInfo.title;
-
-                                    return (
-                                        <th 
-                                            key={report.id} 
-                                            scope="col" 
-                                            className={`px-3 py-3 font-bold text-center min-w-[160px] bg-gray-50/80 backdrop-blur-sm ${isFirstInGroup && idx > 0 ? 'border-l-2 border-gray-300' : 'border-l border-gray-100'}`}
-                                        >
-                                            <div className="flex flex-col items-center gap-0.5">
-                                                {isSpecial ? (
-                                                    <>
-                                                        <span className="text-gray-400 text-[8px] font-bold uppercase mb-0.5">
-                                                            {format(parseISO(report.startDate), 'dd.MM')} — {format(parseISO(report.endDate), 'dd.MM')}
-                                                        </span>
-                                                        <span className="text-gray-900 leading-tight normal-case text-[11px] font-bold line-clamp-2 px-1 text-center">
-                                                            {report.name}
-                                                        </span>
-                                                        {report.description && (
-                                                            <span className="text-gray-400 text-[9px] font-normal leading-tight mt-1 line-clamp-2 px-1 italic">
-                                                                {report.description}
-                                                            </span>
-                                                        )}
-                                                    </>
-                                                ) : (
-                                                    <span className="text-gray-900 leading-tight text-center text-[11px]">{report.themeDisplay}</span>
-                                                )}
-                                            </div>
-                                        </th>
-                                    );
-                                })}
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {sortedDeputies.map(deputy => (
-                                <tr key={deputy.id} className="hover:bg-blue-50/20 transition-colors">
-                                    <th scope="row" className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap sticky left-0 bg-white shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] z-10 border-r border-gray-100">
-                                        <div className="flex flex-col min-w-0 text-left">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className={`text-sm truncate ${!deputy.isAvailable ? 'text-gray-400 line-through' : ''}`}>{deputy.fio}</span>
-                                                <div className="flex items-center gap-1">
-                                                    <button 
-                                                        onClick={() => handleOpenStatusModal(deputy)}
-                                                        className={`p-1 rounded transition-all hover:scale-110 ${deputy.isAvailable ? 'text-green-500 hover:bg-green-50' : 'text-orange-500 hover:bg-orange-50'}`}
-                                                        title={deputy.isAvailable ? "Сделать невзаимодействующим" : "Сделать обязанным сдавать отчеты"}
-                                                    >
-                                                        {deputy.isAvailable ? <UserCheck size={16} /> : <UserX size={16} />}
-                                                    </button>
-                                                    {deputy.deputy === null && (
-                                                        <button 
-                                                            onClick={(e) => handleDeleteDeputy(e, deputy.id)}
-                                                            className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
-                                                            title="Удалить запись"
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            {!deputy.isAvailable && deputy.reason && (
-                                                <span className="text-[10px] text-red-500 font-bold leading-tight italic bg-red-50 px-1.5 py-0.5 rounded-sm whitespace-normal max-w-[200px]">
-                                                    Причина: {deputy.reason}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </th>
-                                    {deputy.isAvailable ? (
-                                        sortedReports.map((report, idx) => {
-                                            const subs = (deputy.reportRecords || []).filter(rr => rr.report === report.id);
-                                            const isNumbered = ['event', 'opt_event', 'reg_event'].includes(report.theme);
-                                            const groupInfo = GET_GROUP_INFO(report.theme);
-                                            const isFirstInGroup = idx === 0 || GET_GROUP_INFO(sortedReports[idx-1].theme).title !== groupInfo.title;
-
-                                            return (
-                                                <td key={`${deputy.id}-${report.id}`} className={`px-2 py-3 text-center ${isFirstInGroup && idx > 0 ? 'border-l-2 border-gray-200 bg-slate-50/30' : 'border-l border-gray-100'}`}>
-                                                    <div className="flex flex-col gap-1.5 items-center">
-                                                        {subs.length > 0 ? subs.map((sub, sIdx) => (
-                                                            <div key={sub.id} className="w-full max-w-[140px]">
-                                                                {sub.link ? (
-                                                                    <a 
-                                                                        href={sub.link} 
-                                                                        target="_blank" 
-                                                                        rel="noopener noreferrer" 
-                                                                        className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 bg-green-50 text-green-700 rounded-lg text-[10px] font-bold hover:bg-green-100 transition-colors border border-green-200"
-                                                                        title={sub.link}
-                                                                    >
-                                                                        <ExternalLink size={10} className="shrink-0" /> 
-                                                                        <span className="truncate">{isNumbered && subs.length > 1 ? `№${sIdx + 1}: ` : ''}{sub.link.replace(/^https?:\/\//, '')}</span>
-                                                                    </a>
-                                                                ) : (
-                                                                    <span className="text-[10px] text-gray-300 uppercase font-bold tracking-tighter">Не сдан</span>
-                                                                )}
-                                                            </div>
-                                                        )) : (
-                                                            <span className="text-[10px] text-gray-300">—</span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                            );
-                                        })
-                                    ) : (
-                                        <td colSpan={sortedReports.length} className="px-6 py-4 bg-gray-50/50 text-center">
-                                            <span className="text-[10px] font-extrabold uppercase text-gray-400 tracking-widest">
-                                                Отчеты не требуются
-                                            </span>
-                                        </td>
-                                    )}
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        );
+            showAlert('success', 'Успешно', 'Результаты проверки сохранены.');
+            setIsAdminCheckModalOpen(false);
+        } catch (error: any) {
+            const errorMsg = error.data?.score?.[0] || error.data?.detail || 'Не удалось сохранить результаты проверки.';
+            showAlert('error', 'Ошибка', errorMsg);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
-    const groupedDeputies = useMemo(() => {
-        const zs = deputyRecords.filter(d => 
-            d.level === 'ЗС' || 
-            (d.levelDisplay || '').includes('ЗС') || 
-            (d.levelDisplay || '').includes('Законодательн')
-        );
-        const acr = deputyRecords.filter(d => 
-            d.level === 'АЦС' || 
-            (d.levelDisplay || '').includes('АЦС') || 
-            (d.levelDisplay || '').includes('административн')
-        );
-        const mcu = deputyRecords.filter(d => 
-            d.level === 'МСУ' || 
-            (d.levelDisplay || '').includes('МСУ') || 
-            (d.levelDisplay || '').includes('муниципальн')
-        );
+    const handleSaveLink = async (recordId: number, link: string | null) => {
+        try {
+            const result = await api.updateReportRecord(recordId, { link });
+            setDeputyRecords(prev => prev.map(deputy => {
+                if (!deputy.reportRecords) return deputy;
+                return {
+                    ...deputy,
+                    reportRecords: deputy.reportRecords.map(rr => 
+                        rr.id === result.id ? result : rr
+                    )
+                };
+            }));
+        } catch (error) {
+            showAlert('error', 'Ошибка', 'Не удалось сохранить ссылку.');
+            throw error;
+        }
+    };
 
-        const handledIds = new Set([...zs, ...acr, ...mcu].map(d => d.id));
-        const others = deputyRecords.filter(d => !handledIds.has(d.id));
-
-        return { zs, acr, mcu, others };
+    const allReportRecords = useMemo(() => {
+        return deputyRecords.flatMap(d => d.reportRecords || []);
     }, [deputyRecords]);
 
     if (loading) {
@@ -384,31 +255,55 @@ const AdminRegionMonitoringView: React.FC = () => {
     const portalRoot = document.getElementById('root');
 
     return (
-        <div className="max-w-full space-y-6 animate-in fade-in duration-500">
-            <header>
-                <Link to={`/reports/regions/${period.id}`} className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors mb-4">
-                    <ArrowLeft size={16} /> К списку регионов
-                </Link>
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold text-gray-900">Мониторинг региона</h1>
-                        <p className="mt-1 text-gray-500">Регион: <span className="text-blue-600 font-bold">{regionName}</span></p>
-                    </div>
-                    <div className="flex flex-col items-end text-right">
-                         <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 rounded-lg text-slate-600 text-xs font-bold mb-1">
-                            <Calendar size={14} /> Период: {period.name}
-                        </div>
-                        <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Всего депутатов: {deputyRecords.length}</p>
-                    </div>
-                </div>
-            </header>
-
-            <div className="space-y-8">
-                {renderLevelTable('Законодательное Собрание (ЗС)', 'ЗС', groupedDeputies.zs, period.reports || [], true)}
-                {renderLevelTable('Административный Центр (АЦС)', 'АЦС', groupedDeputies.acr, period.reports || [], false)}
-                {renderLevelTable('Местное Самоуправление (МСУ)', 'МСУ', groupedDeputies.mcu, period.reports || [], false)}
-                {groupedDeputies.others.length > 0 && renderLevelTable('Другие уровни', 'МСУ', groupedDeputies.others, period.reports || [], false)}
+        <div className="max-w-full space-y-2 animate-in fade-in duration-500 pb-8 sm:pb-0 pt-4 sm:pt-0">
+            <div className="px-4 sm:px-6">
+                {isAdmin ? (
+                    <Link to={`/reports/regions/${period.id}`} className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors">
+                        <ArrowLeft size={16} /> К списку регионов
+                    </Link>
+                ) : (
+                    <Link to={`/reports`} className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-blue-600 transition-colors">
+                        <ArrowLeft size={16} /> Назад к отчетам
+                    </Link>
+                )}
             </div>
+
+            <RegionMonitoringDashboard
+                period={period}
+                periodId={period.id}
+                deputies={deputyRecords}
+                reports={period.reports || []}
+                reportRecords={allReportRecords}
+                isAdmin={isAdmin}
+                isDeputy={user?.role === 'deputy'}
+                onAddDeputy={isAdmin ? (level) => handleOpenAddModal(level as DeputyLevel) : undefined}
+                onDeleteDeputy={isAdmin ? handleDeleteDeputy : undefined}
+                onToggleStatus={isAdmin ? handleOpenStatusModal : undefined}
+                onSaveLink={handleSaveLink}
+                onAdminCheck={isAdmin ? handleOpenAdminCheckModal : () => {}}
+                onFilteredCountChange={setFilteredCount}
+                headerContent={
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                                {user?.role === 'deputy' ? 'Моя отчётность' : 'Мониторинг региона'}
+                                {user?.role !== 'deputy' && (
+                                    <span className="px-3 py-1 bg-blue-600 text-white text-sm font-bold rounded-full">
+                                        {filteredCount}
+                                    </span>
+                                )}
+                            </h1>
+                            <div className="mt-2 flex flex-col gap-1 text-sm">
+                                <p className="text-gray-500">Регион: <span className="text-blue-600 font-bold">{regionName}</span></p>
+                                <p className="text-gray-500">
+                                    Период: <span className="font-bold text-gray-700 capitalize">{period.name || format(parseISO(period.startDate), 'LLLL yyyy', { locale: ru })}</span>
+                                    <span className="ml-1 text-gray-400">({format(parseISO(period.startDate), 'd.MM.yyyy')} - {format(parseISO(period.endDate), 'd.MM.yyyy')})</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            />
 
             {/* Add Deputy Record Modal */}
             {isAddModalOpen && portalRoot && createPortal(
@@ -461,7 +356,7 @@ const AdminRegionMonitoringView: React.FC = () => {
                             <button 
                                 onClick={handleAddDeputy} 
                                 disabled={isSaving || !newDeputyFio.trim() || (!newDeputyAvailable && !newDeputyReason.trim())}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white text-sm font-bold uppercase rounded-lg shadow-md hover:bg-blue-700 disabled:bg-blue-300 transition-all"
+                                className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 text-white text-sm font-bold uppercase rounded-lg shadow-md hover:bg-blue-700 disabled:bg-blue-300 disabled:cursor-not-allowed transition-all"
                             >
                                 {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                                 Сохранить
@@ -473,39 +368,106 @@ const AdminRegionMonitoringView: React.FC = () => {
             )}
 
             {/* Change Status Reason Modal */}
-            {isStatusModalOpen && targetDeputy && portalRoot && createPortal(
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-                    <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-                        <header className="flex items-center justify-between p-4 border-b bg-orange-50">
-                            <h2 className="text-lg font-bold text-orange-800">Статус: Невзаимодействующий</h2>
-                            <button onClick={() => setIsStatusModalOpen(false)} className="p-1 text-gray-400 hover:text-gray-600"><X size={24} /></button>
-                        </header>
-                        <div className="p-6 space-y-4">
-                            <p className="text-sm text-gray-600">Вы переводите депутата <b>{targetDeputy.fio}</b> в статус невзаимодействующего. Он не будет обязан сдавать отчеты в этом периоде.</p>
-                            <TextInput 
-                                label="Причина" 
-                                name="statusReason" 
-                                type="textarea"
-                                value={statusReason} 
-                                onChange={(_, val) => setStatusReason(val)} 
-                                placeholder="Укажите причину (болезнь, отпуск и т.д.)..."
-                                required
-                            />
-                        </div>
-                        <footer className="flex justify-end gap-3 p-4 bg-gray-50 border-t">
-                            <button onClick={() => setIsStatusModalOpen(false)} className="px-4 py-2 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Отмена</button>
-                            <button 
-                                onClick={() => toggleStatus(targetDeputy, false, statusReason)} 
-                                disabled={isSaving || !statusReason.trim()}
-                                className="px-4 py-2 bg-orange-600 text-white text-sm font-bold uppercase rounded-lg shadow-md hover:bg-orange-700 disabled:bg-orange-300 transition-all"
-                            >
-                                {isSaving ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Подтвердить'}
-                            </button>
-                        </footer>
+            <ConfirmationModal
+                isOpen={isStatusModalOpen}
+                onClose={() => setIsStatusModalOpen(false)}
+                onConfirm={() => toggleStatus(targetDeputy!, false, statusReason)}
+                title="Изменить взаимодействие"
+                confirmButtonText="Подтвердить"
+                confirmButtonVariant="primary"
+                isConfirmDisabled={isSaving || !statusReason.trim()}
+                hideIcon={true}
+                isSaving={isSaving}
+            >
+                <div className="text-left space-y-4 mt-4 min-h-[150px]">
+                    <p className="text-sm text-gray-600">
+                        Вы переводите депутата <b>{targetDeputy?.fio}</b> в статус невзаимодействующего. Он не будет обязан сдавать отчеты в этом периоде.
+                    </p>
+                    <div>
+                        <label htmlFor="statusReason" className="block text-base font-semibold text-gray-800 mb-2">
+                            Причина <span className="text-red-500">*</span>
+                        </label>
+                        <textarea
+                            id="statusReason"
+                            name="statusReason"
+                            className="w-full py-3 px-4 border rounded-lg shadow-sm bg-white/50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 border-gray-300 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ease-in-out text-base resize-none"
+                            value={statusReason}
+                            onChange={(e) => setStatusReason(e.target.value)}
+                            placeholder="Укажите причину (болезнь, отпуск и т.д.)..."
+                            rows={3}
+                            required
+                        />
                     </div>
-                </div>,
-                portalRoot
-            )}
+                </div>
+            </ConfirmationModal>
+
+            {/* Admin Check Modal */}
+            <ConfirmationModal
+                isOpen={isAdminCheckModalOpen}
+                onClose={() => setIsAdminCheckModalOpen(false)}
+                onConfirm={() => {
+                    setCheckStatus(checkScore === '' ? 'waiting' : 'processed');
+                    handleAdminCheckSubmit();
+                }}
+                title="Проверка отчета"
+                confirmButtonText="Сохранить"
+                confirmButtonVariant="primary"
+                isConfirmDisabled={isSaving || checkScore === ''}
+                hideIcon={true}
+                isSaving={isSaving}
+            >
+                <div className="text-left space-y-6 mt-4 min-h-[250px]">
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-800">Ссылка на отчет</label>
+                        <a href={targetReportRecord?.link || '#'} target="_blank" rel="noopener noreferrer" className="block p-3 bg-blue-50 text-blue-600 rounded-lg text-sm hover:underline break-all border border-blue-100">
+                            {targetReportRecord?.link}
+                        </a>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="block text-sm font-semibold text-gray-800">Оценка</label>
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setCheckScore('0')}
+                                className={`flex-1 py-3 px-4 rounded-xl border-2 text-base font-bold transition-all ${
+                                    checkScore === '0' 
+                                    ? 'border-red-500 bg-red-500 text-white shadow-sm' 
+                                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50'
+                                }`}
+                            >
+                                0 баллов
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setCheckScore('1')}
+                                className={`flex-1 py-3 px-4 rounded-xl border-2 text-base font-bold transition-all ${
+                                    checkScore === '1' 
+                                    ? 'border-green-500 bg-green-500 text-white shadow-sm' 
+                                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:bg-gray-50'
+                                }`}
+                            >
+                                1 балл
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label htmlFor="scoreExplanation" className="block text-base font-semibold text-gray-800 mb-2">
+                            Комментарий к оценке
+                        </label>
+                        <textarea
+                            id="scoreExplanation"
+                            name="scoreExplanation"
+                            className="w-full py-3 px-4 border rounded-lg shadow-sm bg-white/50 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 border-gray-300 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ease-in-out text-base resize-none"
+                            value={checkExplanation}
+                            onChange={(e) => setCheckExplanation(e.target.value)}
+                            placeholder="Объяснение выставленной оценки..."
+                            rows={3}
+                        />
+                    </div>
+                </div>
+            </ConfirmationModal>
         </div>
     );
 };

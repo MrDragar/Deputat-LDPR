@@ -129,7 +129,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isValid && user) {
         setIsAuthenticated(true);
         setUser(user);
-        navigate('/');
       }
     } catch (error) {
       console.error('Login failed:', error);

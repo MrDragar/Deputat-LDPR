@@ -269,7 +269,7 @@ const FederalPlanPage: React.FC = () => {
                                           size: 20 // 10pt
                                       }),
                                       new TextRun({
-                                          text: value || "",
+                                          text: String(value) || "",
                                           size: 20
                                       })
                                   ],

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { format } from "date-fns";
+import { format, startOfDay } from "date-fns";
 // FIX: The `ru` locale is imported from its specific path, which is required in newer versions of date-fns.
 import { ru } from "date-fns/locale/ru";
 import { Calendar as CalendarIcon } from "lucide-react";
@@ -10,9 +10,11 @@ import MobileDateRangePicker from "./MobileDateRangePicker";
 interface DateRangePickerProps {
     date: DateRange | undefined;
     onDateChange: (date: DateRange | undefined) => void;
+    minDate?: Date;
+    maxDate?: Date;
 }
 
-export function DateRangePicker({ date, onDateChange }: DateRangePickerProps) {
+export function DateRangePicker({ date, onDateChange, minDate, maxDate }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -36,6 +38,10 @@ export function DateRangePicker({ date, onDateChange }: DateRangePickerProps) {
   }, [isOpen, isMobile]);
   
   const handleDayClick = (day: Date) => {
+      const dayStart = startOfDay(day);
+      const minStart = minDate ? startOfDay(minDate) : undefined;
+      const maxStart = maxDate ? startOfDay(maxDate) : undefined;
+      if ((minStart && dayStart < minStart) || (maxStart && dayStart > maxStart)) return;
       if (date?.from && !date.to && day.getTime() === date.from.getTime()) {
           onDateChange(undefined);
       } else if (date?.from && date.to && (day.getTime() === date.from.getTime() || day.getTime() === date.to.getTime())) {
@@ -100,6 +106,8 @@ export function DateRangePicker({ date, onDateChange }: DateRangePickerProps) {
                     onClose={() => setIsOpen(false)}
                     date={date}
                     onApply={handleMobileApply}
+                    minDate={minDate}
+                    maxDate={maxDate}
                   />,
                   portalRoot
               )}
@@ -122,10 +130,12 @@ export function DateRangePicker({ date, onDateChange }: DateRangePickerProps) {
       </button>
 
       {isOpen && (
-        <div className="absolute z-10 top-full mt-2 right-0 sm:right-auto sm:left-0">
+        <div className="absolute z-50 top-full mt-2 right-0 sm:right-auto sm:left-0 shadow-xl rounded-lg border border-gray-200">
             <Calendar
                 selected={date}
                 onDayClick={handleDayClick}
+                minDate={minDate}
+                maxDate={maxDate}
             />
         </div>
       )}
