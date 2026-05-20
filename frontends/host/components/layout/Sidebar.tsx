@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, setCollapsed, isMobileOp
     {
       title: 'Дашборды',
       items: [
-        { to: '/dashboard', text: 'ВДПГ', icon: LayoutDashboard, roles: ['admin'], external: true },
+        { to: '/dashboard', text: 'ВДПГ', icon: LayoutDashboard, roles: ['admin'], external: false },
       ]
     },
     {
