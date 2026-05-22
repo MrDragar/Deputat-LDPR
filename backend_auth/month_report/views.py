@@ -136,7 +136,7 @@ class ReportRecordViewSet(viewsets.ModelViewSet):
     queryset = ReportRecord.objects.all()
 
     def get_serializer_class(self):
-        if self.action == 'retrieve':
+        if self.action == 'retrieve' or self.action == "partial_update" or self.action == "update":
             return ReportRecordDetailSerializer
         if self.action == 'admin_check':
             return AdminReportRecordSerializer
