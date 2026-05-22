@@ -58,7 +58,9 @@ class ReportRecordDetailSerializer(serializers.ModelSerializer):
             'score_explanation',
             'status',
             'checked_at',
-            'created_at'
+            'created_at',
+            'report',
+            'deputy_record'
         ]
 
 
