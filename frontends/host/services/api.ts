@@ -335,8 +335,12 @@ export const api = {
     const response = await customFetch(`${REPORT_API_URL}/report-records/`, { headers: getAuthHeaders() });
     return handleApiResponse(response);
   },
-  updateReportRecord: async (id: number, data: Omit<ReportRecord, 'id'>): Promise<ReportRecord> => {
-    const response = await customFetch(`${REPORT_API_URL}/report-records/${id}/`, { method: 'PUT', headers: getAuthHeaders(), body: JSON.stringify(data) });
+  updateReportRecord: async (id: number, data: Partial<Pick<ReportRecord, 'link'>>): Promise<ReportRecord> => {
+    const response = await customFetch(`${REPORT_API_URL}/report-records/${id}/`, { method: 'PATCH', headers: getAuthHeaders(), body: JSON.stringify(data) });
+    return handleApiResponse(response);
+  },
+  adminCheckReportRecord: async (id: number, data: Pick<ReportRecord, 'score' | 'scoreExplanation' | 'status'>): Promise<ReportRecord> => {
+    const response = await customFetch(`${REPORT_API_URL}/report-records/${id}/admin_check/`, { method: 'PATCH', headers: getAuthHeaders(), body: JSON.stringify(data) });
     return handleApiResponse(response);
   },
 
